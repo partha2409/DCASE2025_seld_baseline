@@ -16,7 +16,6 @@ Classes:
 Author: Parthasaarathy Sudarsanam, Audio Research Group, Tampere University
 Date: January 2025
 """
-
 import os
 import librosa
 import librosa.feature
@@ -36,7 +35,7 @@ class SELDFeatureExtractor():
         Args:
             params (dict): A dictionary containing various parameters for audio/video feature extraction among others.
         """
-
+        self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         self.params = params
         self.root_dir = params['root_dir']
         self.feat_dir = params['feat_dir']
@@ -45,7 +44,6 @@ class SELDFeatureExtractor():
 
         # audio feature extraction
         self.sampling_rate = params['sampling_rate']
-        self.max_audio_len_in_s = params['max_audio_len_in_s']
         self.hop_length = int(self.sampling_rate * params['hop_length_s'])
         self.win_length = 2 * self.hop_length
         self.n_fft = 2 ** (self.win_length - 1).bit_length()
@@ -54,10 +52,9 @@ class SELDFeatureExtractor():
         # video feature extraction
         if self.modality == 'audio_visual':
             self.fps = params['fps']
-            self.max_video_len_in_s = params['max_video_len_in_s']
             # Initialize ResNet model and set to evaluation mode
             self.weights = ResNet50_Weights.DEFAULT
-            self.model = resnet50(weights=self.weights)
+            self.model = resnet50(weights=self.weights).to(self.device)
             self.backbone = torch.nn.Sequential(*(list(self.model.children())[:-2]))
             self.backbone.eval()
             self.preprocess = self.weights.transforms()
@@ -74,12 +71,12 @@ class SELDFeatureExtractor():
         elif split == 'eval':
             audio_files = glob.glob(os.path.join(self.root_dir, 'stereo_eval', 'eval', '*.wav'))
         else:
-            raise AssertionError("Split must be either 'dev' or 'eval'.")
+            raise ValueError("Split must be either 'dev' or 'eval'.")
 
         os.makedirs(os.path.join(self.feat_dir, f'stereo_{split}'), exist_ok=True)
 
         for audio_file in tqdm(audio_files, desc=f"Processing audio files ({split})", unit="file"):
-            filename = os.path.splitext(os.path.basename(audio_file))[0] + '.npy'
+            filename = os.path.splitext(os.path.basename(audio_file))[0] + '.pt'
             feature_path = os.path.join(self.feat_dir, f'stereo_{split}', filename)
             # Check if the feature file already exists
             if os.path.exists(feature_path):
@@ -87,7 +84,8 @@ class SELDFeatureExtractor():
             # If the feature file doesn't exist, perform extraction
             audio, sr = self.load_audio(audio_file)
             audio_feat = self.extract_log_mel_spectrogram(audio, sr)
-            np.save(feature_path, audio_feat, allow_pickle=True)
+            audio_feat = torch.tensor(audio_feat, dtype=torch.float32)
+            torch.save(audio_feat, feature_path)
 
     def extract_video_features(self, split):
         """
@@ -100,12 +98,12 @@ class SELDFeatureExtractor():
         elif split == 'eval':
             video_files = glob.glob(os.path.join(self.root_dir, 'video_eval', 'eval', '*.mp4'))
         else:
-            raise AssertionError("Split must be either 'dev' or 'eval'.")
+            raise ValueError("Split must be either 'dev' or 'eval'.")
 
         os.makedirs(os.path.join(self.feat_dir, f'video_{split}'), exist_ok=True)
 
         for video_file in tqdm(video_files, desc=f"Processing video files ({split})", unit="file"):
-            filename = os.path.splitext(os.path.basename(video_file))[0] + '.npy'
+            filename = os.path.splitext(os.path.basename(video_file))[0] + '.pt'
             feature_path = os.path.join(self.feat_dir, f'video_{split}', filename)
 
             # Check if the feature file already exists
@@ -115,7 +113,7 @@ class SELDFeatureExtractor():
             # If the feature file doesn't exist, perform extraction
             video_frames = self.load_video(video_file)
             video_feat = self.extract_resnet_features(video_frames)
-            np.save(feature_path, video_feat, allow_pickle=True)
+            torch.save(video_feat, feature_path)
 
     def extract_features(self, split='dev'):
         """
@@ -132,7 +130,7 @@ class SELDFeatureExtractor():
             self.extract_audio_features(split)
             self.extract_video_features(split)
         else:
-            raise AssertionError("Modality should be one of 'audio' or 'audio_visual'. You can set the modality in params.py")
+            raise ValueError("Modality should be one of 'audio' or 'audio_visual'. You can set the modality in params.py")
 
     def load_audio(self, audio_file):
         """
@@ -201,22 +199,24 @@ class SELDFeatureExtractor():
         """
 
         with torch.no_grad():
-            # Preprocess images
             preprocessed_images = [self.preprocess(image) for image in video_frames]
             max_batch_size = 1000
             iter = (len(preprocessed_images) - 1) // max_batch_size + 1
             vid_features_part_list = []
             for i in range(iter):
-                preprocessed_images_part = torch.stack(preprocessed_images[i * max_batch_size: (i + 1) * max_batch_size], dim=0)
+                preprocessed_images_part = torch.stack(preprocessed_images[i * max_batch_size: (i + 1) * max_batch_size], dim=0).to(self.device)
                 vid_features_part = self.backbone(preprocessed_images_part)
                 vid_features_part = torch.mean(vid_features_part, dim=1)
                 vid_features_part_list.append(vid_features_part)
             vid_features = torch.cat(vid_features_part_list, dim=0)
-        vid_feat = np.array(vid_features)
-        return vid_feat
+        return vid_features
 
 
 if __name__ == '__main__':
-    pass
-    # use this to test if the SELDFeatureExtractor class works as expected after the dataset is ready.
+    # use this space to test if the SELDFeatureExtractor class works as expected.
     # All the classes will be called from the main.py for actual use.
+    from parameters import params
+    feature_extractor = SELDFeatureExtractor(params)
+    feature_extractor.extract_features(split='dev')
+
+
