@@ -2,30 +2,28 @@
 extract_features.py
 
 This module defines the SELDFeatureExtractor class, which provides functionality to extract features from both audio
-and video data. It includes the following key components:
+and video data. It also processes the labels to support MultiACCDOA (ADPIT).  It includes the following key components:
 
 Classes:
-    SELDFeatureExtractor: A class that supports the extraction of audio and video features.
-    It can extract log Mel spectrogram from audio files and ResNet-based features from video frames.
+    SELDFeatureExtractor: A class that supports the extraction of audio and video features. It extracts log Mel
+    spectrogram from audio files and ResNet-based features from video frames. It also processes labels for MultiACCDOA.
 
     Methods:
         - extract_audio_features: Extracts audio features from a specified split of the dataset.
         - extract_video_features: Extracts video features from a specified split of the dataset.
         - extract_features: A high-level function to extract features based on the modality ('audio' or 'audio_visual').
+        - extract_labels: converts labels to support multiACCDOA.
 
 Author: Parthasaarathy Sudarsanam, Audio Research Group, Tampere University
-Date: January 2025
+Date: February 2025
 """
+
 import os
-import librosa
-import librosa.feature
 import glob
-import numpy as np
-import cv2
 import torch
 from torchvision.models import resnet50, ResNet50_Weights
-from PIL import Image
 from tqdm import tqdm
+import utils
 
 
 class SELDFeatureExtractor():
@@ -59,6 +57,10 @@ class SELDFeatureExtractor():
             self.backbone.eval()
             self.preprocess = self.weights.transforms()
 
+        # label extraction
+        self.nb_label_frames = params['label_sequence_length']
+        self.nb_unique_classes = params['nb_classes']
+
     def extract_audio_features(self, split):
         """
         Extracts audio features for a given split (dev/eval).
@@ -82,8 +84,8 @@ class SELDFeatureExtractor():
             if os.path.exists(feature_path):
                 continue
             # If the feature file doesn't exist, perform extraction
-            audio, sr = self.load_audio(audio_file)
-            audio_feat = self.extract_log_mel_spectrogram(audio, sr)
+            audio, sr = utils.load_audio(audio_file, self.sampling_rate)
+            audio_feat = utils.extract_log_mel_spectrogram(audio, sr, self.n_fft, self.hop_length, self.win_length, self.nb_mels)
             audio_feat = torch.tensor(audio_feat, dtype=torch.float32)
             torch.save(audio_feat, feature_path)
 
@@ -111,8 +113,8 @@ class SELDFeatureExtractor():
                 continue
 
             # If the feature file doesn't exist, perform extraction
-            video_frames = self.load_video(video_file)
-            video_feat = self.extract_resnet_features(video_frames)
+            video_frames = utils.load_video(video_file, self.fps)
+            video_feat = utils.extract_resnet_features(video_frames, self.preprocess, self.backbone, self.device)
             torch.save(video_feat, feature_path)
 
     def extract_features(self, split='dev'):
@@ -132,84 +134,34 @@ class SELDFeatureExtractor():
         else:
             raise ValueError("Modality should be one of 'audio' or 'audio_visual'. You can set the modality in params.py")
 
-    def load_audio(self, audio_file):
-        """
-        Loads an audio file.
-        Args:
-            audio_file (str): Path to the audio file.
-        Returns:
-            tuple: (audio_data, sample_rate)
-        """
+    def extract_labels(self, split):
 
-        audio_data, sr = librosa.load(path=audio_file, sr=self.sampling_rate, mono=False)
-        return audio_data, sr
+        os.makedirs(self.feat_dir, exist_ok=True)   # already created by extract_features method
 
-    def extract_log_mel_spectrogram(self, audio, sr):
-        """
-        Extracts log mel spectrogram from audio data.
-        Args:
-            audio (ndarray): Audio data.
-            sr (int): Sample rate of the audio.
-        Returns:
-            ndarray: Log mel spectrogram.
-        """
+        if split == 'dev':
+            label_files = glob.glob(os.path.join(self.root_dir, 'metadata_dev', 'dev-*', '*.csv'))
+        elif split == 'eval':  # only for organizers
+            label_files = glob.glob(os.path.join(self.root_dir, 'metadata_eval', 'eval', '*.csv'))
+        else:
+            raise ValueError("Split must be either 'dev' or 'eval'.")
 
-        linear_stft = librosa.stft(y=audio, n_fft=self.n_fft, hop_length=self.hop_length, win_length=self.win_length).T
-        linear_stft_mag = np.abs(linear_stft) ** 2
-        mel_spec = librosa.feature.melspectrogram(S=linear_stft_mag, sr=sr, n_mels=self.nb_mels)
-        log_mel_spectrogram = librosa.power_to_db(mel_spec)
-        log_mel_spectrogram = log_mel_spectrogram.transpose((0, 2, 1)).reshape(linear_stft.shape[0], -1)
-        return log_mel_spectrogram
+        os.makedirs(os.path.join(self.feat_dir, f'metadata_{split}'), exist_ok=True)
 
-    def load_video(self, video_file):
-        """
-        Loads video frames from a video file.
-        Args:
-            video_file (str): Path to the video file.
-        Returns:
-            list: List of PIL images (frames).
-        """
+        for label_file in tqdm(label_files, desc=f"Processing label files ({split})", unit="file"):
+            filename = os.path.splitext(os.path.basename(label_file))[0] + '.pt'
+            feature_path = os.path.join(self.feat_dir, f'metadata_{split}', filename)
 
-        cap = cv2.VideoCapture(video_file)
-        video_fps = int(cap.get(cv2.CAP_PROP_FPS))
-        frame_interval = max(1, video_fps // self.fps)
+            # Check if the feature file already exists
+            if os.path.exists(feature_path):
+                continue
 
-        pil_frames = []
-        frame_cnt = 0
-        while True:
-            ret, frame = cap.read()
-            if not ret:
-                break
-            if frame_cnt % frame_interval == 0:
-                resized_frame = cv2.resize(frame, (360, 180))
-                frame_rgb = cv2.cvtColor(resized_frame, cv2.COLOR_BGR2RGB)
-                pil_frame = Image.fromarray(frame_rgb)
-                pil_frames.append(pil_frame)
-            frame_cnt += 1
-        cap.release()
-        return pil_frames
-
-    def extract_resnet_features(self, video_frames):
-        """
-        Extracts ResNet-50 features from video frames.
-        Args:
-            video_frames (list): List of PIL video frames.
-        Returns:
-            ndarray: Extracted video features.
-        """
-
-        with torch.no_grad():
-            preprocessed_images = [self.preprocess(image) for image in video_frames]
-            max_batch_size = 1000
-            iter = (len(preprocessed_images) - 1) // max_batch_size + 1
-            vid_features_part_list = []
-            for i in range(iter):
-                preprocessed_images_part = torch.stack(preprocessed_images[i * max_batch_size: (i + 1) * max_batch_size], dim=0).to(self.device)
-                vid_features_part = self.backbone(preprocessed_images_part)
-                vid_features_part = torch.mean(vid_features_part, dim=1)
-                vid_features_part_list.append(vid_features_part)
-            vid_features = torch.cat(vid_features_part_list, dim=0)
-        return vid_features
+            # If the feature file doesn't exist, perform extraction
+            label_data = utils.load_labels(label_file)
+            if params['multiACCDOA']:  # TODO: currently multiaccdoa is always set to True
+                processed_labels = utils.get_adpit_labels(label_data, self.nb_label_frames, self.nb_unique_classes)
+            else:
+                raise NotImplementedError("This code currently supports only MultiACCDOA configuration. Set it to True.")
+            torch.save(processed_labels, feature_path)
 
 
 if __name__ == '__main__':
@@ -217,6 +169,7 @@ if __name__ == '__main__':
     # All the classes will be called from the main.py for actual use.
     from parameters import params
     feature_extractor = SELDFeatureExtractor(params)
-    feature_extractor.extract_features(split='dev')
+    #feature_extractor.extract_features(split='dev')
+    feature_extractor.extract_labels(split='dev')
 
 
