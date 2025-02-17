@@ -145,23 +145,23 @@ class SELDFeatureExtractor():
         else:
             raise ValueError("Split must be either 'dev' or 'eval'.")
 
-        os.makedirs(os.path.join(self.feat_dir, f'metadata_{split}'), exist_ok=True)
+        os.makedirs(os.path.join(self.feat_dir, 'metadata_{}{}'.format(split, '_adpit' if self.params['multiACCDOA'] else '')), exist_ok=True)
 
         for label_file in tqdm(label_files, desc=f"Processing label files ({split})", unit="file"):
             filename = os.path.splitext(os.path.basename(label_file))[0] + '.pt'
-            feature_path = os.path.join(self.feat_dir, f'metadata_{split}', filename)
+            label_path = os.path.join(self.feat_dir, 'metadata_{}{}'.format(split, '_adpit' if self.params['multiACCDOA'] else ''), filename)
 
             # Check if the feature file already exists
-            if os.path.exists(feature_path):
+            if os.path.exists(label_path):
                 continue
 
             # If the feature file doesn't exist, perform extraction
             label_data = utils.load_labels(label_file)
-            if params['multiACCDOA']:  # TODO: currently multiaccdoa is always set to True
-                processed_labels = utils.get_adpit_labels(label_data, self.nb_label_frames, self.nb_unique_classes)
+            if params['multiACCDOA']:
+                processed_labels = utils.process_labels_adpit(label_data, self.nb_label_frames, self.nb_unique_classes)
             else:
-                raise NotImplementedError("This code currently supports only MultiACCDOA configuration. Set it to True.")
-            torch.save(processed_labels, feature_path)
+                processed_labels = utils.process_labels(label_data, self.nb_label_frames, self.nb_unique_classes)
+            torch.save(processed_labels, label_path)
 
 
 if __name__ == '__main__':

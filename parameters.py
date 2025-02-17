@@ -52,7 +52,7 @@ params = {
     'label_sequence_length': 50,  # 5 seconds with 100ms frames
 
     # loss params
-    'multiACCDOA': True,  # Do not change
+    'multiACCDOA': False,
 
     # training params
     'nb_epochs': None,

@@ -150,7 +150,29 @@ def load_labels(label_file, convert_to_cartesian=True):
     return label_data
 
 
-def get_adpit_labels(_desc_file, _nb_label_frames, _nb_unique_classes):
+def process_labels(_desc_file, _nb_label_frames, _nb_unique_classes):
+
+    se_label = np.zeros((_nb_label_frames, _nb_unique_classes))
+    x_label = np.zeros((_nb_label_frames, _nb_unique_classes))
+    y_label = np.zeros((_nb_label_frames, _nb_unique_classes))
+    dist_label = np.zeros((_nb_label_frames, _nb_unique_classes))
+    onscreen_label = np.zeros((_nb_label_frames, _nb_unique_classes))
+
+    for frame_ind, active_event_list in _desc_file.items():
+        if frame_ind < _nb_label_frames:
+            for active_event in active_event_list:
+                # print(active_event)
+                se_label[frame_ind, active_event[0]] = 1
+                x_label[frame_ind, active_event[0]] = active_event[2]
+                y_label[frame_ind, active_event[0]] = active_event[3]
+                dist_label[frame_ind, active_event[0]] = active_event[4]/100.
+                onscreen_label[frame_ind, active_event[0]] = active_event[5]
+
+    label_mat = np.concatenate((se_label, x_label, y_label, dist_label, onscreen_label), axis=1)
+    return label_mat
+
+
+def process_labels_adpit(_desc_file, _nb_label_frames, _nb_unique_classes):
 
     se_label = np.zeros((_nb_label_frames, 6, _nb_unique_classes))  # 50, 6, 13
     x_label = np.zeros((_nb_label_frames, 6, _nb_unique_classes))
