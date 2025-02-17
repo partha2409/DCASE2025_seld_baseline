@@ -63,7 +63,7 @@ class SELDModel(nn.Module):
 
         # Fusion layers
         if params['modality'] == 'audio_visual':
-            self.visual_embed_to_d_model = nn.Linear(in_features=49, out_features=params['rnn_size'])  # TODO: remove 49 hardcoding
+            self.visual_embed_to_d_model = nn.Linear(in_features=params['resnet_feature_size'], out_features=params['rnn_size'])
             self.transformer_decoder_layer = nn.TransformerDecoderLayer(d_model=params['rnn_size'], nhead=params['nb_attn_heads'], batch_first=True)
             self.transformer_decoder = nn.TransformerDecoder(self.transformer_decoder_layer, num_layers=params['nb_transformer_layers'])
 
@@ -73,7 +73,10 @@ class SELDModel(nn.Module):
             self.fnn_list.append(nn.Linear(params['fnn_size'] if fc_cnt else params['rnn_size'], params['fnn_size'], bias=True))
 
         # TODO fix the last fnn layer according to the expected output shape for example including on/off screen
-        self.output_dim = params['max_polyphony'] * 3 * params['nb_classes']  # 3 => (x,y) and distance
+        if params['multiACCDOA']:
+            self.output_dim = params['max_polyphony'] * 3 * params['nb_classes']  # 3 => (x,y) and distance
+        else:
+            self.output_dim = 3 * params['nb_classes']  # 3 => (x,y) and distance
         self.fnn_list.append(nn.Linear(params['fnn_size'] if params['nb_fnn_layers'] else self.params['rnn_size'], self.output_dim, bias=True))
 
     def forward(self, audio_feat, vid_feat=None):
@@ -81,7 +84,7 @@ class SELDModel(nn.Module):
         Forward pass for the SELD model.
         audio_feat: Tensor of shape (batch_size, 2, 251, 64) (stereo spectrogram input).
         vid_feat: Optional tensor of shape (batch_size, 50, 7, 7) (visual feature map).
-        Returns: TODO: include on/off - Tensor of shape (batch_size, 50, 117) - SELD predictions.
+        Returns:  Tensor of shape (batch_size, 50, 117) - SELD predictions. TODO: include on/off screen
         """
         # audio feat - B x 2 x 251 x 64
         for conv_block in self.conv_blocks:
@@ -117,6 +120,9 @@ if __name__ == '__main__':
     # use this to test if the SELDModel class works as expected.
     # All the classes will be called from the main.py for actual use.
     from parameters import params
+    #params['multiACCDOA'] = True
+    params['multiACCDOA'] = False
+
     test_audio_feat = torch.rand([8, 2, 251, 64])
     test_video_feat = torch.rand([8, 50, 7, 7])
 

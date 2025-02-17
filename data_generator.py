@@ -21,6 +21,7 @@ import os
 import torch
 import glob
 from torch.utils.data.dataset import Dataset
+import numpy as np
 
 
 class DataGenerator(Dataset):
@@ -52,12 +53,19 @@ class DataGenerator(Dataset):
         Returns:
             tuple: A tuple containing audio features, video_features (for audio_visual modality), and labels.
         """
+        # TODO: Currently labels are returned with on/off screen. so handle loss accordingly.
 
         audio_file = self.audio_files[item]
         label_file = self.label_files[item]
 
         audio_features = torch.load(audio_file)
         labels = torch.load(label_file)
+
+        if not self.params['multiACCDOA']:  # TODO: why masking and multiplication instead of simply omitting the first 13 entries?
+
+            mask = labels[:, :self.params['nb_classes']]
+            mask = mask.repeat(1, 4)
+            labels = mask * labels[:, self.params['nb_classes']:]
 
         if self.modality == 'audio_visual':
             video_file = self.video_files[item]
@@ -86,7 +94,7 @@ class DataGenerator(Dataset):
         # Loop through each fold and collect files
         for fold in self.folds:
             audio_files += glob.glob(os.path.join(self.feat_dir, f'stereo_dev/{fold}*.pt'))
-            label_files += glob.glob(os.path.join(self.feat_dir, 'metadata_dev{}/{}*.pt'.format('_adpit' if params['multiACCDOA'] else '', fold)))
+            label_files += glob.glob(os.path.join(self.feat_dir, 'metadata_dev{}/{}*.pt'.format('_adpit' if self.params['multiACCDOA'] else '', fold)))
 
             # Only collect video files if modality is 'audio_video'
             if self.modality == 'audio_visual':
@@ -131,7 +139,7 @@ if __name__ == '__main__':
 
     from parameters import params
     from torch.utils.data import DataLoader
-
+    params['multiACCDOA'] = False
     dev_train_dataset = DataGenerator(params=params, mode='dev_train')
     dev_train_iterator = DataLoader(dataset=dev_train_dataset, batch_size=params['batch_size'], num_workers=params['nb_workers'], shuffle=params['shuffle'], pin_memory=False,  drop_last=True)
 
@@ -143,6 +151,7 @@ if __name__ == '__main__':
             print(input_features[0].size())
             print(input_features[1].size())
             print(labels.size())
+        break
 
 
 
