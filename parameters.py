@@ -12,12 +12,14 @@ params = {
 
     # choose task
     'modality': 'audio_visual',  # 'audio' or audio_visual'
+    'net_type': 'SELDnet',
 
     # data params
     'root_dir': '../DCASE2025_SELD_dataset',  # parent directory containing the audio, video and labels directory
-    'feat_dir': '../DCASE2025_SELD_dataset/features',  # store extracted features here "root_dir/feat_dir"
+    'feat_dir': '../DCASE2025_SELD_dataset/features',  # store extracted features here
 
     'log_dir': 'logs',  # save all logs here like loss and metrics
+    'checkpoints_dir': 'checkpoints',  # save all logs here like loss and metrics
     'output_dir': 'outputs',  # save the predicted files here.
 
     # audio feature extraction params
@@ -52,22 +54,24 @@ params = {
     'label_sequence_length': 50,  # 5 seconds with 100ms frames
 
     # loss params
-    'multiACCDOA': False,
+    'multiACCDOA': True,
 
     # training params
-    'nb_epochs': None,
+    'nb_epochs': 1,
     'batch_size': 1,
     'nb_workers': 0,
     'shuffle': True,
 
 
     # optimizer params
-    'learning_rate': None,
-    'weight_decay': None,
+    'learning_rate': 1e-4,
+    'weight_decay': 1e-2,
 
     # folds for training, testing
     'dev_train_folds': ['fold3'],
     'dev_test_folds': ['fold4'],
     'dev_synth_folds': ['fold1, fold2'],
+
+    # metric params - DAVID
 
 }
