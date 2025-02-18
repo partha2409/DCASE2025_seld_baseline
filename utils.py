@@ -27,15 +27,15 @@ def setup(params):
     Args:
         params (dict): Dictionary containing the configuration parameters.
     Returns:
-        tuple: A tuple containing the path to the checkpoints folder and the tensorboard summary writer instance.
+        tuple: A tuple containing the path to the checkpoints folder, output folder and the tensorboard summary writer instance.
     """
     # create dir to save model checkpoints
-    reference = params['net_type'] + '_' + params['modality'] + str(time.strftime('_%Y%m%d_%H%M%S'))
-    checkpoints_folder = os.path.join(params['checkpoints_dir'], reference)
-    os.makedirs(checkpoints_folder, exist_ok=True)
+    reference = f"{params['net_type']}_{params['modality']}_{'multiACCDOA' if params['multiACCDOA'] else 'singleACCDOA'}{time.strftime('_%Y%m%d_%H%M%S')}"
+    checkpoints_dir = os.path.join(params['checkpoints_dir'], reference)
+    os.makedirs(checkpoints_dir, exist_ok=True)
 
     # save the all the config/hyperparams to a pickle file
-    pickle_filepath = os.path.join(str(checkpoints_folder), 'config.pkl')
+    pickle_filepath = os.path.join(str(checkpoints_dir), 'config.pkl')
     pickle_file = open(pickle_filepath, 'wb')
     pickle.dump(params, pickle_file)
 
@@ -44,7 +44,11 @@ def setup(params):
     os.makedirs(log_dir, exist_ok=True)
     summary_writer = SummaryWriter(log_dir=str(log_dir))
 
-    return checkpoints_folder, summary_writer
+    # create output folder to save the predictions
+    output_dir = os.path.join(params['output_dir'], reference)
+    os.makedirs(output_dir, exist_ok=True)
+
+    return checkpoints_dir, output_dir, summary_writer
 
 
 def load_audio(audio_file, sampling_rate):
@@ -310,3 +314,59 @@ def convert_cartesian_to_polar(input_dict):
             azimuth = azi_rad * 180 / np.pi
             output_dict[frame_idx].append(tmp_val[0:2] + [azimuth] + tmp_val[4:])
     return output_dict
+
+
+def get_accdoa_labels(logits, nb_classes, modality):
+    x, y = logits[:, :, :nb_classes], logits[:, :, nb_classes:2 * nb_classes]
+    sed = torch.sqrt(x ** 2 + y ** 2) > 0.5
+    distance = logits[:, :, 2 * nb_classes: 3 * nb_classes]
+    distance[distance < 0.] = 0.
+    if modality == 'audio_visual':
+        on_screen = logits[:, :, 3 * nb_classes: 4 * nb_classes]
+    else:
+        on_screen = torch.zeros_like(distance)  # don't care for audio modality
+    dummy_src_id = torch.zeros_like(distance)
+    return sed, dummy_src_id, x, y, distance, on_screen
+
+
+def get_multiaccdoa_labels(logits, nb_classes, modality):
+    pass
+
+
+def get_output_dict_format(sed, src_id, x, y, dist, onscreen, convert_to_polar=True):
+    output_dict = {}
+    for frame_cnt in range(sed.shape[0]):
+        for class_cnt in range(sed.shape[1]):
+            if sed[frame_cnt][class_cnt] > 0.5:
+                if frame_cnt not in output_dict:
+                    output_dict[frame_cnt] = []
+                output_dict[frame_cnt].append([class_cnt, src_id[frame_cnt][class_cnt], x[frame_cnt][class_cnt], y[frame_cnt][class_cnt], dist[frame_cnt][class_cnt], onscreen[frame_cnt][class_cnt]])
+
+    if convert_to_polar:
+        output_dict = convert_cartesian_to_polar(output_dict)
+    return output_dict
+
+
+def write_to_dcase_output_format(output_dict, output_dir, filename, split):
+    os.makedirs(os.path.join(output_dir, split), exist_ok=True)
+    file_path = os.path.join(output_dir,split, filename)
+    with open(file_path, 'w') as f:
+        f.write('frame,class,source,azimuth,distance,onscreen\n')
+        # Write data
+        for frame_ind, values in output_dict.items():
+            for value in values:
+                f.write(f"{int(frame_ind)},{int(value[0])},{int(value[1])},{float(value[2]):.2f},{float(value[3]):.2f},{int(value[4])}\n")
+
+
+def write_logits_to_dcase_format(logits, params, output_dir, filelist, split='dev-test'):
+    if not params['multiACCDOA']:
+        sed, dummy_src_id, x, y, dist, onscreen = get_accdoa_labels(logits, params['nb_classes'], params['modality'])
+        for i in range(sed.size(0)):
+            sed_i, dummy_src_id_i, x_i, y_i, dist_i, onscreen_i = sed[i].cpu().numpy(), dummy_src_id[i].cpu().numpy(), x[i].cpu().numpy(), y[i].cpu().numpy(), dist[i].cpu().numpy(), onscreen[i].cpu().numpy()
+            output_dict = get_output_dict_format(sed_i, dummy_src_id_i, x_i, y_i, dist_i, onscreen_i, convert_to_polar=True)
+            write_to_dcase_output_format(output_dict, output_dir, os.path.basename(filelist[i])[:-3] + '.csv', split)
+
+    else:
+        pass
+
+
