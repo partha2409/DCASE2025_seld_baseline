@@ -72,7 +72,6 @@ class SELDModel(nn.Module):
         for fc_cnt in range(params['nb_fnn_layers']):
             self.fnn_list.append(nn.Linear(params['fnn_size'] if fc_cnt else params['rnn_size'], params['fnn_size'], bias=True))
 
-        # TODO fix the last fnn layer according to the expected output shape for example including on/off screen
         if params['multiACCDOA']:
             if params['modality'] == 'audio_visual':
                 self.output_dim = params['max_polyphony'] * 4 * params['nb_classes']  # 4 => (x,y), distance, on/off
@@ -133,7 +132,7 @@ if __name__ == '__main__':
     # All the classes will be called from the main.py for actual use.
     from parameters import params
 
-    #params['multiACCDOA'] = True
+    # params['multiACCDOA'] = True
     params['multiACCDOA'] = False
 
     params['modality'] = 'audio'
@@ -141,13 +140,12 @@ if __name__ == '__main__':
 
     test_audio_feat = torch.rand([8, 2, 251, 64])
     test_video_feat = torch.rand([8, 50, 7, 7])
-    #test_video_feat = None
+    # test_video_feat = None  # set to none for audio modality
 
     test_model = SELDModel(params)
     doa = test_model(test_audio_feat, test_video_feat)
     print(doa.size())
-    # batch x 50 x 117  => 117 = 3(polyphony) x 3(x,y,dist) x 13(nb_classes) - multiaccdoa
-    # batch x 50 x 39  => 39 = 3(x,y,dist) x 13(nb_classes) - not multiaccdoa
+
 
 
 
