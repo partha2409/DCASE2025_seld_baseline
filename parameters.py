@@ -19,7 +19,7 @@ params = {
     'feat_dir': '../DCASE2025_SELD_dataset/features',  # store extracted features here
 
     'log_dir': 'logs',  # save all logs here like loss and metrics
-    'checkpoints_dir': 'checkpoints',  # save all logs here like loss and metrics
+    'checkpoints_dir': 'checkpoints',  # save trained model checkpoints and config
     'output_dir': 'outputs',  # save the predicted files here.
 
     # audio feature extraction params
@@ -58,7 +58,7 @@ params = {
 
     # training params
     'nb_epochs': 1,
-    'batch_size': 1,
+    'batch_size': 8,
     'nb_workers': 0,
     'shuffle': True,
 

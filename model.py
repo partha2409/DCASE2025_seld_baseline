@@ -74,17 +74,29 @@ class SELDModel(nn.Module):
 
         # TODO fix the last fnn layer according to the expected output shape for example including on/off screen
         if params['multiACCDOA']:
-            self.output_dim = params['max_polyphony'] * 3 * params['nb_classes']  # 3 => (x,y) and distance
+            if params['modality'] == 'audio_visual':
+                self.output_dim = params['max_polyphony'] * 4 * params['nb_classes']  # 4 => (x,y), distance, on/off
+            else:
+                self.output_dim = params['max_polyphony'] * 3 * params['nb_classes']  # 3 => (x,y), distance
         else:
-            self.output_dim = 3 * params['nb_classes']  # 3 => (x,y) and distance
+            if params['modality'] == 'audio_visual':
+                self.output_dim = 4 * params['nb_classes']  # 4 => (x,y), distance, on/off
+            else:
+                self.output_dim = 3 * params['nb_classes']  # 3 => (x,y), distance
         self.fnn_list.append(nn.Linear(params['fnn_size'] if params['nb_fnn_layers'] else self.params['rnn_size'], self.output_dim, bias=True))
+        # TODO: consider activations: for example sigmoid for on off and tanh for doa, relu for distance?
 
     def forward(self, audio_feat, vid_feat=None):
         """
         Forward pass for the SELD model.
         audio_feat: Tensor of shape (batch_size, 2, 251, 64) (stereo spectrogram input).
         vid_feat: Optional tensor of shape (batch_size, 50, 7, 7) (visual feature map).
-        Returns:  Tensor of shape (batch_size, 50, 117) - SELD predictions. TODO: include on/off screen
+        Returns:  Tensor of shape
+                  (batch_size, 50, 117) - audio - multiACCDOA.
+                  (batch_size, 50, 39)  - audio - singleACCDOA.
+                  (batch_size, 50, 156) - audio_visual - multiACCDOA.
+                  (batch_size, 50, 52) - audio_visual - singleACCDOA.
+
         """
         # audio feat - B x 2 x 251 x 64
         for conv_block in self.conv_blocks:
@@ -120,15 +132,22 @@ if __name__ == '__main__':
     # use this to test if the SELDModel class works as expected.
     # All the classes will be called from the main.py for actual use.
     from parameters import params
+
     #params['multiACCDOA'] = True
     params['multiACCDOA'] = False
 
+    params['modality'] = 'audio'
+    params['modality'] = 'audio_visual'
+
     test_audio_feat = torch.rand([8, 2, 251, 64])
     test_video_feat = torch.rand([8, 50, 7, 7])
+    #test_video_feat = None
 
     test_model = SELDModel(params)
     doa = test_model(test_audio_feat, test_video_feat)
     print(doa.size())
-    # batch x 50 x 117  => 117 = 3(polyphony) x 3(x,y,dist) x 13(nb_classes)
+    # batch x 50 x 117  => 117 = 3(polyphony) x 3(x,y,dist) x 13(nb_classes) - multiaccdoa
+    # batch x 50 x 39  => 39 = 3(x,y,dist) x 13(nb_classes) - not multiaccdoa
+
 
 
