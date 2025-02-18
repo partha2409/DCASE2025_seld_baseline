@@ -53,8 +53,6 @@ class DataGenerator(Dataset):
         Returns:
             tuple: A tuple containing audio features, video_features (for audio_visual modality), and labels.
         """
-        # TODO: Currently labels are returned with on/off screen. so handle loss accordingly.
-
         audio_file = self.audio_files[item]
         label_file = self.label_files[item]
 
