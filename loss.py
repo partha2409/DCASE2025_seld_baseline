@@ -15,7 +15,8 @@ Date: January 2025
 #       audio (batch_size, 50, 117) -> 117 = 3 (tracks) x 3 (x,y,dist), 13 (classes)
 #       audio_visual (batch_size, 50, 156) -> 156 = 3 (tracks) x 4 (x,y,dist, on/off), 13 (classes)
 #  target:
-#       (batch_size, 50, 6, 4, 13) -> 3 (tracks) x 4 (x,y,dist, on/off), 13 (classes)  - need to ignore the on/off when dealing with audio
+#       audio (batch_size, 50, 6, 4, 13) -> 6 (tracks) x 4 (sed, x, y, dist), 13 (classes)
+#       audio_visual (batch_size, 50, 6, 5, 13) -> 6 (tracks) x 5 (sed, x, y, dist,on/off), 13 (classes)
 
 
 import torch
@@ -143,9 +144,10 @@ if __name__ == '__main__':
     seld_loss = SELDLoss(params)
     if params['modality'] == 'audio':
         dummy_pred = torch.rand(8, 50, 117)
+        dummy_target = torch.rand(8, 50, 6, 4, 13)
     else:
-        dummy_pred = torch.rand(8, 50, 117)
+        dummy_pred = torch.rand(8, 50, 156)
+        dummy_target = torch.rand(8, 50, 6, 5, 13)
 
-    dummy_target = torch.rand(8, 50, 6, 4, 13)
     loss = seld_loss(dummy_pred, dummy_target)
 
