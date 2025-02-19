@@ -8,7 +8,8 @@ Date: January 2025
 """
 
 
-# TODO : Implement ADPIT loss including on/off screen predictions
+# TODO : Implement ADPIT loss including on/off screen predictions.
+#  General idea: Choose the permutation with the lowest MSE loss based on doa. Then use the corresponding dist and on/off pred as it is.
 #  Guidelines:
 #  output:
 #       audio (batch_size, 50, 117) -> 117 = 3 (tracks) x 3 (x,y,dist), 13 (classes)
@@ -24,9 +25,12 @@ import torch.nn as nn
 class SELDLoss(nn.Module):
     def __init__(self, params):
         super().__init__()
-        self.params = params
-        self.modality = params['modality'] # 'audio' or 'audio_visual'
+        self.params = params  # feel free to add params to the parameters.py file if something extra is needed.
+        self.modality = params['modality']  # 'audio' or 'audio_visual'
+
         self._each_loss = nn.MSELoss(reduction='none')
+        self.bce_loss = nn.BCELoss()
+
 
     def _each_calc(self, output, target):
         return self._each_loss(output, target).mean(dim=2)  # class-wise frame-level
@@ -135,7 +139,7 @@ if __name__ == '__main__':
     # switch between the two to test
     params['modality'] = 'audio'
     params['modality'] = 'audio_visual'
-        
+
     seld_loss = SELDLoss(params)
     if params['modality'] == 'audio':
         dummy_pred = torch.rand(8, 50, 117)
