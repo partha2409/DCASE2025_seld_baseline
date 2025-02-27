@@ -10,15 +10,18 @@ Date: January 2025
 
 
 import torch
-import torch.nn as nn
 from parameters import params
 from model import SELDModel
-from loss import SELDLoss
+from loss import SELDLossADPIT, SELDLossSingleACCDOA
 from metrics import SELDMetrics
 from data_generator import DataGenerator
 from torch.utils.data import DataLoader
 from extract_features import SELDFeatureExtractor
 import utils
+
+import os
+os.environ['CUDA_LAUNCH_BLOCKING'] = '1'
+os.environ['TORCH_USE_CUDA_DSA'] = '1'
 
 
 def main(pre_trained_model=None):
@@ -42,11 +45,10 @@ def main(pre_trained_model=None):
     seld_model = SELDModel(params=params).to(device)
     optimizer = torch.optim.Adam(params=seld_model.parameters(), lr=params['learning_rate'], weight_decay=params['weight_decay'])
 
-    # TODO handle onscreen off screen loss
     if params['multiACCDOA']:
-        seld_loss = SELDLoss(params=params).to(device)
+        seld_loss = SELDLossADPIT(params=params).to(device)
     else:
-        seld_loss = nn.MSELoss()
+        seld_loss = SELDLossSingleACCDOA(params=params).to(device)
 
     seld_metrics = SELDMetrics(params=params)
 
@@ -60,27 +62,22 @@ def main(pre_trained_model=None):
 
     # Training and validation
     for epoch in range(start_epoch, params['nb_epochs']):
+
         seld_model.train()
-        # Track loss per iteration to average over the epoch.
-        train_loss_per_epoch = 0
+        train_loss_per_epoch = 0  # Track loss per iteration to average over the epoch.
+
         for i, (input_features, labels) in enumerate(dev_train_iterator):
             optimizer.zero_grad()
+
+            labels = labels.to(device)
             if params['modality'] == 'audio':
-                audio_features = input_features.to(device)
-                video_features = None
-                labels = labels.to(device)
+                audio_features, video_features = input_features.to(device), None
             elif params['modality'] == 'audio_visual':
-                audio_features = input_features[0].to(device)
-                video_features = input_features[1].to(device)
-                labels = labels.to(device)
+                audio_features, video_features = input_features[0].to(device), input_features[1].to(device)
             else:
                 raise AssertionError("Modality should be one of 'audio' or 'audio_visual'. You can set the modality in params.py")
 
             logits = seld_model(audio_features, video_features)
-            #print(params['modality'], params['multiACCDOA'])
-            #print(logits.size(), labels.size())
-
-            # TODO: if modality is audio visual then apply separate loss for on off screen.
             loss = seld_loss(logits, labels)
             loss.backward()
             optimizer.step()
@@ -88,26 +85,21 @@ def main(pre_trained_model=None):
 
         # validation loop after every epoch
         with torch.no_grad():
-            seld_model.eval()
 
-            # Track loss per iteration to average over the epoch.
-            val_loss_per_epoch = 0
+            seld_model.eval()
+            val_loss_per_epoch = 0  # Track loss per iteration to average over the epoch.
 
             for j, (input_features, labels) in enumerate(dev_test_iterator):
 
+                labels = labels.to(device)
                 if params['modality'] == 'audio':
-                    audio_features = input_features.to(device)
-                    video_features = None
-                    labels = labels.to(device)
+                    audio_features, video_features = input_features.to(device), None
                 elif params['modality'] == 'audio_visual':
-                    audio_features = input_features[0].to(device)
-                    video_features = input_features[1].to(device)
-                    labels = labels.to(device)
+                    audio_features, video_features = input_features[0].to(device), input_features[1].to(device)
                 else:
                     raise AssertionError("Modality should be one of 'audio' or 'audio_visual'. You can set the modality in params.py")
-                logits = seld_model(audio_features, video_features)
 
-                # TODO: if modality is audio visual then apply separate loss for on off screen.
+                logits = seld_model(audio_features, video_features)
                 loss = seld_loss(logits, labels)
                 val_loss_per_epoch += loss.item()
                 utils.write_logits_to_dcase_format(logits, params, output_dir, dev_test_dataset.label_files[j*params['batch_size']: (j+1)*params['batch_size']])

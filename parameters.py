@@ -49,16 +49,17 @@ params = {
     'nb_fnn_layers': 1,
     'fnn_size':128,
 
-    'max_polyphony': 3,  # for multiaccdoa
+    'max_polyphony': 3,   # tracks for multiaccdoa
     'nb_classes': 13,
     'label_sequence_length': 50,  # 5 seconds with 100ms frames
 
     # loss params
     'multiACCDOA': True,
+    'thresh_unify': 15,
 
     # training params
-    'nb_epochs': 1,
-    'batch_size': 8,
+    'nb_epochs': 10,
+    'batch_size': 64,
     'nb_workers': 0,
     'shuffle': True,
 

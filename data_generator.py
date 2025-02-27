@@ -55,7 +55,6 @@ class DataGenerator(Dataset):
         """
         audio_file = self.audio_files[item]
         label_file = self.label_files[item]
-
         audio_features = torch.load(audio_file)
         labels = torch.load(label_file)
 
@@ -82,7 +81,7 @@ class DataGenerator(Dataset):
         Returns:
             int: Number of data points.
         """
-
+        #return 100
         return len(self.audio_files)
 
     def get_feature_files(self):

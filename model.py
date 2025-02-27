@@ -43,6 +43,7 @@ class SELDModel(nn.Module):
     """
     def __init__(self, params):
         super().__init__()
+        self.params = params
         # Conv layers
         self.conv_blocks = nn.ModuleList()
         for conv_cnt in range(params['nb_conv_blocks']):
@@ -83,7 +84,11 @@ class SELDModel(nn.Module):
             else:
                 self.output_dim = 3 * params['nb_classes']  # 3 => (x,y), distance
         self.fnn_list.append(nn.Linear(params['fnn_size'] if params['nb_fnn_layers'] else self.params['rnn_size'], self.output_dim, bias=True))
-        # TODO: consider activations: for example sigmoid for on off and tanh for doa, relu for distance?
+
+        self.doa_act = nn.Tanh()
+        self.dist_act = nn.ReLU()
+        if params['modality'] == 'audio_visual':
+            self.onscreen_act = nn.Sigmoid()
 
     def forward(self, audio_feat, vid_feat=None):
         """
@@ -123,8 +128,56 @@ class SELDModel(nn.Module):
 
         for fnn_cnt in range(len(self.fnn_list) - 1):
             fused_feat = self.fnn_list[fnn_cnt](fused_feat)
-        doa = self.fnn_list[-1](fused_feat)
-        return doa
+        pred = self.fnn_list[-1](fused_feat)
+
+        if self.params['modality'] == 'audio':
+            if self.params['multiACCDOA']:
+                # pred shape is batch,50,117 - 117 is 3 tracks x 3 (doa-x, doa-y, dist) x 13 classes
+                pred = pred.reshape(pred.size(0), pred.size(1), 3, 3, 13)
+                doa_pred = pred[:, :, :, 0:2, :]
+                dist_pred = pred[:, :, :, 2:3, :]
+                doa_pred = self.doa_act(doa_pred)
+                dist_pred = self.dist_act(dist_pred)
+                pred = torch.cat((doa_pred, dist_pred), dim=3)
+                pred = pred.reshape(pred.size(0), pred.size(1), -1)
+            else:
+                # pred shape is batch,50,39 - 39 is 3 (doa-x, doa-y, dist) x 13 classes
+                pred = pred.reshape(pred.size(0), pred.size(1), 3, 13)
+                doa_pred = pred[:, :,  0:2, :]
+                dist_pred = pred[:, :, 2:3, :]
+                doa_pred = self.doa_act(doa_pred)
+                dist_pred = self.dist_act(dist_pred)
+                pred = torch.cat((doa_pred, dist_pred), dim=2)
+                pred = pred.reshape(pred.size(0), pred.size(1), -1)
+        else:
+            if self.params['multiACCDOA']:
+                # pred shape is batch,50,156 - 156 is 3 tracks x 4 (doa-x, doa-y, dist, onscreen) x 13 classes
+                pred = pred.reshape(pred.size(0), pred.size(1), 3, 4, 13)
+                doa_pred = pred[:, :, :, 0:2, :]
+                dist_pred = pred[:, :, :, 2:3, :]
+                onscreen_pred = pred[:, :, :, 3:4, :]
+
+                doa_pred = self.doa_act(doa_pred)
+                dist_pred = self.dist_act(dist_pred)
+                onscreen_pred = self.onscreen_act(onscreen_pred)
+
+                pred = torch.cat((doa_pred, dist_pred, onscreen_pred), dim=3)
+                pred = pred.reshape(pred.size(0), pred.size(1), -1)
+            else:
+                # pred shape is batch,50,52 - 52 is 4 (doa-x, doa-y, dist, onscreen) x 13 classes
+                pred = pred.reshape(pred.size(0), pred.size(1), 4, 13)
+                doa_pred = pred[:, :, 0:2, :]
+                dist_pred = pred[:, :, 2:3, :]
+                onscreen_pred = pred[:, :, 3:4, :]
+
+                doa_pred = self.doa_act(doa_pred)
+                dist_pred = self.dist_act(dist_pred)
+                onscreen_pred = self.onscreen_act(onscreen_pred)
+
+                pred = torch.cat((doa_pred, dist_pred, onscreen_pred), dim=2)
+                pred = pred.reshape(pred.size(0), pred.size(1), -1)
+
+        return pred
 
 
 if __name__ == '__main__':
@@ -132,8 +185,8 @@ if __name__ == '__main__':
     # All the classes will be called from the main.py for actual use.
     from parameters import params
 
-    # params['multiACCDOA'] = True
-    params['multiACCDOA'] = False
+    params['multiACCDOA'] = True
+    #params['multiACCDOA'] = False
 
     params['modality'] = 'audio'
     params['modality'] = 'audio_visual'

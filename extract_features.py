@@ -168,7 +168,7 @@ if __name__ == '__main__':
     # use this space to test if the SELDFeatureExtractor class works as expected.
     # All the classes will be called from the main.py for actual use.
     from parameters import params
-    params['multiACCDOA'] = False
+    params['multiACCDOA'] = True
     feature_extractor = SELDFeatureExtractor(params)
     #feature_extractor.extract_features(split='dev')
     feature_extractor.extract_labels(split='dev')

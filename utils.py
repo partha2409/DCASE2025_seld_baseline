@@ -205,7 +205,7 @@ def process_labels_adpit(_desc_file, _nb_label_frames, _nb_unique_classes):
                         x_label[frame_ind, 1, active_event_b0[0]] = active_event_b0[2]
                         y_label[frame_ind, 1, active_event_b0[0]] = active_event_b0[3]
                         dist_label[frame_ind, 1, active_event_b0[0]] = active_event_b0[4] / 100.
-                        onscreen_label[frame_ind, 0, active_event_b0[0]] = active_event_b0[5]
+                        onscreen_label[frame_ind, 1, active_event_b0[0]] = active_event_b0[5]
                         # --b1--
                         active_event_b1 = active_event_list_per_class[1]
                         se_label[frame_ind, 2, active_event_b1[0]] = 1
@@ -289,6 +289,7 @@ def process_labels_adpit(_desc_file, _nb_label_frames, _nb_unique_classes):
     label_mat = torch.stack((se_label, x_label, y_label, dist_label, onscreen_label), dim=2)  # [nb_frames, 6, 5(act+XY+dist+onscreen), max_classes]
     return label_mat
 
+
 def convert_polar_to_cartesian(input_dict):
     output_dict = {}
     for frame_idx in input_dict.keys():
@@ -330,10 +331,62 @@ def get_accdoa_labels(logits, nb_classes, modality):
 
 
 def get_multiaccdoa_labels(logits, nb_classes, modality):
-    pass
+    if modality == 'audio':
+        x0, y0 = logits[:, :, :1*nb_classes], logits[:, :, 1*nb_classes:2*nb_classes]
+        sed0 = torch.sqrt(x0**2 + y0**2) > 0.5
+        dist0 = logits[:, :, 2*nb_classes:3*nb_classes]
+        dist0[dist0 < 0.] = 0
+        doa0 = logits[:, :, :2*nb_classes]
+        dummy_src_id0 = torch.zeros_like(dist0)
+        on_screen0 = torch.zeros_like(dist0)
+
+        x1, y1 = logits[:, :, 3*nb_classes:4 * nb_classes], logits[:, :, 4 * nb_classes: 5 * nb_classes]
+        sed1 = torch.sqrt(x1 ** 2 + y1 ** 2) > 0.5
+        dist1 = logits[:, :, 5 * nb_classes:6 * nb_classes]
+        dist1[dist1 < 0.] = 0
+        doa1 = logits[:, :, 3*nb_classes:5 * nb_classes]
+        dummy_src_id1 = torch.zeros_like(dist1)
+        on_screen1 = torch.zeros_like(dist1)
+
+        x2, y2 = logits[:, :, 6*nb_classes:7 * nb_classes], logits[:, :, 7 * nb_classes:8 * nb_classes]
+        sed2 = torch.sqrt(x2 ** 2 + y2 ** 2) > 0.5
+        dist2 = logits[:, :, 8 * nb_classes:9 * nb_classes]
+        dist2[dist2 < 0.] = 0
+        doa2 = logits[:, :, 6*nb_classes:8 * nb_classes]
+        dummy_src_id2 = torch.zeros_like(dist2)
+        on_screen2 = torch.zeros_like(dist2)
+
+        return sed0, dummy_src_id0, doa0,  dist0, on_screen0, sed1, dummy_src_id1, doa1,  dist1, on_screen1, sed2, dummy_src_id2, doa2,  dist2, on_screen2
+
+    else:
+        x0, y0 = logits[:, :, :1 * nb_classes], logits[:, :, 1 * nb_classes:2 * nb_classes]
+        sed0 = torch.sqrt(x0 ** 2 + y0 ** 2) > 0.5
+        dist0 = logits[:, :, 2 * nb_classes:3 * nb_classes]
+        dist0[dist0 < 0.] = 0
+        doa0 = logits[:, :, :2 * nb_classes]
+        dummy_src_id0 = torch.zeros_like(dist0)
+        on_screen0 = logits[:, :, 3 * nb_classes:4 * nb_classes]
+
+        x1, y1 = logits[:, :, 4 * nb_classes:5 * nb_classes], logits[:, :, 5 * nb_classes: 6 * nb_classes]
+        sed1 = torch.sqrt(x1 ** 2 + y1 ** 2) > 0.5
+        dist1 = logits[:, :, 6 * nb_classes:7 * nb_classes]
+        dist1[dist1 < 0.] = 0
+        doa1 = logits[:, :, 4 * nb_classes:6 * nb_classes]
+        dummy_src_id1 = torch.zeros_like(dist1)
+        on_screen1 = logits[:, :, 7 * nb_classes:8 * nb_classes]
+
+        x2, y2 = logits[:, :, 8 * nb_classes:9 * nb_classes], logits[:, :, 9 * nb_classes:10 * nb_classes]
+        sed2 = torch.sqrt(x2 ** 2 + y2 ** 2) > 0.5
+        dist2 = logits[:, :, 10 * nb_classes:11 * nb_classes]
+        dist2[dist2 < 0.] = 0
+        doa2 = logits[:, :, 8 * nb_classes:10 * nb_classes]
+        dummy_src_id2 = torch.zeros_like(dist2)
+        on_screen2 = logits[:, :, 11 * nb_classes:12 * nb_classes]
+
+        return sed0, dummy_src_id0, doa0, dist0, on_screen0, sed1, dummy_src_id1, doa1, dist1, on_screen1, sed2, dummy_src_id2, doa2, dist2, on_screen2
 
 
-def get_output_dict_format(sed, src_id, x, y, dist, onscreen, convert_to_polar=True):
+def get_output_dict_format_single_accdoa(sed, src_id, x, y, dist, onscreen, convert_to_polar=True):
     output_dict = {}
     for frame_cnt in range(sed.shape[0]):
         for class_cnt in range(sed.shape[1]):
@@ -341,6 +394,148 @@ def get_output_dict_format(sed, src_id, x, y, dist, onscreen, convert_to_polar=T
                 if frame_cnt not in output_dict:
                     output_dict[frame_cnt] = []
                 output_dict[frame_cnt].append([class_cnt, src_id[frame_cnt][class_cnt], x[frame_cnt][class_cnt], y[frame_cnt][class_cnt], dist[frame_cnt][class_cnt], onscreen[frame_cnt][class_cnt]])
+
+    if convert_to_polar:
+        output_dict = convert_cartesian_to_polar(output_dict)
+    return output_dict
+
+
+def distance_between_cartesian_coordinates(x1, y1, x2, y2):
+    """
+    Angular distance between two cartesian coordinates
+    MORE: https://en.wikipedia.org/wiki/Great-circle_distance
+    Check 'From chord length' section
+
+    :return: angular distance in degrees
+    """
+    # Normalize the Cartesian vectors
+    N1 = np.sqrt(x1**2 + y1**2 + 1e-10)
+    N2 = np.sqrt(x2**2 + y2**2 + 1e-10)
+    x1, y1, x2, y2 = x1/N1, y1/N1, x2/N2, y2/N2
+
+    #Compute the distance
+    dist = x1*x2 + y1*y2
+    dist = np.clip(dist, -1, 1)
+    dist = np.arccos(dist) * 180 / np.pi
+    return dist
+
+
+def determine_similar_location(sed_pred0, sed_pred1, doa_pred0, doa_pred1, class_cnt, thresh_unify, nb_classes):
+    if (sed_pred0 == 1) and (sed_pred1 == 1):
+        if distance_between_cartesian_coordinates(doa_pred0[class_cnt], doa_pred0[class_cnt+1*nb_classes], doa_pred1[class_cnt], doa_pred1[class_cnt+1*nb_classes]) < thresh_unify:
+            return 1
+        else:
+            return 0
+    else:
+        return 0
+
+
+def get_output_dict_format_multi_accdoa(sed0, dummy_src_id0, doa0, dist0, on_screen0, sed1, dummy_src_id1, doa1, dist1, on_screen1, sed2, dummy_src_id2, doa2, dist2, on_screen2, thresh_unify, nb_classes, convert_to_polar=True):
+    output_dict = {}
+    for frame_cnt in range(sed0.shape[0]):
+        for class_cnt in range(sed0.shape[1]):
+            flag_0sim1 = determine_similar_location(sed0[frame_cnt][class_cnt], sed1[frame_cnt][class_cnt], doa0[frame_cnt], doa1[frame_cnt], class_cnt, thresh_unify, nb_classes)
+            flag_1sim2 = determine_similar_location(sed1[frame_cnt][class_cnt], sed2[frame_cnt][class_cnt], doa1[frame_cnt], doa2[frame_cnt], class_cnt, thresh_unify, nb_classes)
+            flag_2sim0 = determine_similar_location(sed2[frame_cnt][class_cnt], sed0[frame_cnt][class_cnt], doa2[frame_cnt], doa0[frame_cnt], class_cnt, thresh_unify, nb_classes)
+
+            # unify or not unify according to flag
+            if flag_0sim1 + flag_1sim2 + flag_2sim0 == 0:
+                if sed0[frame_cnt][class_cnt] > 0.5:
+                    if frame_cnt not in output_dict:
+                        output_dict[frame_cnt] = []
+                    output_dict[frame_cnt].append([class_cnt,
+                                                   dummy_src_id0[frame_cnt][class_cnt],
+                                                   doa0[frame_cnt][class_cnt],
+                                                   doa0[frame_cnt][class_cnt + nb_classes],
+                                                   dist0[frame_cnt][class_cnt],
+                                                   on_screen0[frame_cnt][class_cnt]])
+
+                if sed1[frame_cnt][class_cnt] > 0.5:
+                    if frame_cnt not in output_dict:
+                        output_dict[frame_cnt] = []
+                    output_dict[frame_cnt].append([class_cnt,
+                                                   dummy_src_id1[frame_cnt][class_cnt],
+                                                   doa1[frame_cnt][class_cnt],
+                                                   doa1[frame_cnt][class_cnt + nb_classes],
+                                                   dist1[frame_cnt][class_cnt],
+                                                   on_screen1[frame_cnt][class_cnt]])
+
+                if sed2[frame_cnt][class_cnt] > 0.5:
+                    if frame_cnt not in output_dict:
+                        output_dict[frame_cnt] = []
+                    output_dict[frame_cnt].append([class_cnt,
+                                                   dummy_src_id2[frame_cnt][class_cnt],
+                                                   doa2[frame_cnt][class_cnt],
+                                                   doa2[frame_cnt][class_cnt + nb_classes],
+                                                   dist2[frame_cnt][class_cnt],
+                                                   on_screen2[frame_cnt][class_cnt]])
+
+            elif flag_0sim1 + flag_1sim2 + flag_2sim0 == 1:
+                if frame_cnt not in output_dict:
+                    output_dict[frame_cnt] = []
+                if flag_0sim1:
+                    if sed2[frame_cnt][class_cnt] > 0.5:
+                        output_dict[frame_cnt].append([class_cnt,
+                                                       dummy_src_id2[frame_cnt][class_cnt],
+                                                       doa2[frame_cnt][class_cnt],
+                                                       doa2[frame_cnt][class_cnt + nb_classes],
+                                                       dist2[frame_cnt][class_cnt],
+                                                       on_screen2[frame_cnt][class_cnt]])
+
+                    doa_pred_fc = (doa0[frame_cnt] + doa1[frame_cnt]) / 2
+                    dist_pred_fc = (dist0[frame_cnt] + dist1[frame_cnt]) / 2
+                    on_screen_pred_fc = on_screen0[frame_cnt]  # TODO: How to choose
+                    dummy_src_id_pred_fc = dummy_src_id0[frame_cnt]
+                    output_dict[frame_cnt].append(
+                        [class_cnt, dummy_src_id_pred_fc[class_cnt], doa_pred_fc[class_cnt], doa_pred_fc[class_cnt + nb_classes],dist_pred_fc[class_cnt], on_screen_pred_fc[class_cnt]])
+
+                elif flag_1sim2:
+                    if sed0[frame_cnt][class_cnt] > 0.5:
+                        output_dict[frame_cnt].append([class_cnt,
+                                                       dummy_src_id0[frame_cnt][class_cnt],
+                                                       doa0[frame_cnt][class_cnt],
+                                                       doa0[frame_cnt][class_cnt + nb_classes],
+                                                       dist0[frame_cnt][class_cnt],
+                                                       on_screen0[frame_cnt][class_cnt]])
+
+                    doa_pred_fc = (doa1[frame_cnt] + doa2[frame_cnt]) / 2
+                    dist_pred_fc = (dist1[frame_cnt] + dist2[frame_cnt]) / 2
+                    on_screen_pred_fc = on_screen1[frame_cnt]  # TODO: How to choose
+                    dummy_src_id_pred_fc = dummy_src_id1[frame_cnt]
+
+                    output_dict[frame_cnt].append(
+                        [class_cnt, dummy_src_id_pred_fc[class_cnt], doa_pred_fc[class_cnt],
+                         doa_pred_fc[class_cnt + nb_classes], dist_pred_fc[class_cnt], on_screen_pred_fc[class_cnt]])
+
+                elif flag_2sim0:
+                    if sed1[frame_cnt][class_cnt] > 0.5:
+                        output_dict[frame_cnt].append([class_cnt,
+                                                       dummy_src_id1[frame_cnt][class_cnt],
+                                                       doa1[frame_cnt][class_cnt],
+                                                       doa1[frame_cnt][class_cnt + nb_classes],
+                                                       dist1[frame_cnt][class_cnt],
+                                                       on_screen1[frame_cnt][class_cnt]])
+
+                    doa_pred_fc = (doa2[frame_cnt] + doa0[frame_cnt]) / 2
+                    dist_pred_fc = (dist2[frame_cnt] + dist0[frame_cnt]) / 2
+                    on_screen_pred_fc = on_screen2[frame_cnt]  # TODO: How to choose
+                    dummy_src_id_pred_fc = dummy_src_id2[frame_cnt]
+
+                    output_dict[frame_cnt].append(
+                        [class_cnt, dummy_src_id_pred_fc[class_cnt], doa_pred_fc[class_cnt],
+                         doa_pred_fc[class_cnt + nb_classes], dist_pred_fc[class_cnt], on_screen_pred_fc[class_cnt]])
+
+            elif flag_0sim1 + flag_1sim2 + flag_2sim0 >= 2:
+                if frame_cnt not in output_dict:
+                    output_dict[frame_cnt] = []
+                doa_pred_fc = (doa0[frame_cnt] + doa1[frame_cnt] + doa2[frame_cnt]) / 3
+                dist_pred_fc = (dist0[frame_cnt] + dist1[frame_cnt] + dist2[frame_cnt]) / 3
+
+                dummy_src_id_pred_fc = dummy_src_id0[frame_cnt]
+                on_screen_pred_fc = on_screen0[frame_cnt]  # TODO: How to do this?
+
+                output_dict[frame_cnt].append(
+                    [class_cnt, dummy_src_id_pred_fc[class_cnt], doa_pred_fc[class_cnt], doa_pred_fc[class_cnt + nb_classes], dist_pred_fc[class_cnt], on_screen_pred_fc[class_cnt]])
 
     if convert_to_polar:
         output_dict = convert_cartesian_to_polar(output_dict)
@@ -363,10 +558,21 @@ def write_logits_to_dcase_format(logits, params, output_dir, filelist, split='de
         sed, dummy_src_id, x, y, dist, onscreen = get_accdoa_labels(logits, params['nb_classes'], params['modality'])
         for i in range(sed.size(0)):
             sed_i, dummy_src_id_i, x_i, y_i, dist_i, onscreen_i = sed[i].cpu().numpy(), dummy_src_id[i].cpu().numpy(), x[i].cpu().numpy(), y[i].cpu().numpy(), dist[i].cpu().numpy(), onscreen[i].cpu().numpy()
-            output_dict = get_output_dict_format(sed_i, dummy_src_id_i, x_i, y_i, dist_i, onscreen_i, convert_to_polar=True)
+            output_dict = get_output_dict_format_single_accdoa(sed_i, dummy_src_id_i, x_i, y_i, dist_i, onscreen_i, convert_to_polar=True)
             write_to_dcase_output_format(output_dict, output_dir, os.path.basename(filelist[i])[:-3] + '.csv', split)
 
     else:
-        pass
+        (sed0, dummy_src_id0, doa0, dist0, on_screen0,
+         sed1, dummy_src_id1, doa1, dist1, on_screen1,
+         sed2, dummy_src_id2, doa2, dist2, on_screen2) = get_multiaccdoa_labels(logits, params['nb_classes'], params['modality'])
 
+        for i in range(sed0.size(0)):
+            sed0_i, dummy_src_id0_i, doa0_i, dist0_i, on_screen0_i = sed0[i].cpu().numpy(), dummy_src_id0[i].cpu().numpy(), doa0[i].cpu().numpy(), dist0[i].cpu().numpy(), on_screen0[i].cpu().numpy()
+            sed1_i, dummy_src_id1_i, doa1_i, dist1_i, on_screen1_i = sed1[i].cpu().numpy(), dummy_src_id1[i].cpu().numpy(), doa1[i].cpu().numpy(), dist1[i].cpu().numpy(), on_screen1[i].cpu().numpy()
+            sed2_i, dummy_src_id2_i, doa2_i, dist2_i, on_screen2_i = sed2[i].cpu().numpy(), dummy_src_id2[i].cpu().numpy(), doa2[i].cpu().numpy(), dist2[i].cpu().numpy(), on_screen2[i].cpu().numpy()
+
+            output_dict = get_output_dict_format_multi_accdoa(sed0_i, dummy_src_id0_i, doa0_i, dist0_i, on_screen0_i,
+                                                              sed1_i, dummy_src_id1_i, doa1_i, dist1_i, on_screen1_i,
+                                                              sed2_i, dummy_src_id2_i, doa2_i, dist2_i, on_screen2_i, params['thresh_unify'], params['nb_classes'], convert_to_polar=True)
+            write_to_dcase_output_format(output_dict, output_dir, os.path.basename(filelist[i])[:-3] + '.csv', split)
 
