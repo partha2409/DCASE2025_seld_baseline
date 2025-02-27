@@ -50,15 +50,17 @@ def main(pre_trained_model=None):
     else:
         seld_loss = SELDLossSingleACCDOA(params=params).to(device)
 
-    seld_metrics = SELDMetrics(params=params)
+    seld_metrics = SELDMetrics(params=params, output_dir=output_dir, split='dev_test')
 
     start_epoch = 0
+    best_metric_score = 0
     # load pretrained model if available to continue training
     if pre_trained_model is not None:
         ckpt = torch.load(pre_trained_model)
         seld_model.load_state_dict(ckpt['seld_model'])
         optimizer.load_state_dict(ckpt['opt'])
         start_epoch = ckpt['epoch'] + 1
+        best_metric_score = ckpt['best_score']
 
     # Training and validation
     for epoch in range(start_epoch, params['nb_epochs']):
@@ -103,7 +105,14 @@ def main(pre_trained_model=None):
                 loss = seld_loss(logits, labels)
                 val_loss_per_epoch += loss.item()
                 utils.write_logits_to_dcase_format(logits, params, output_dir, dev_test_dataset.label_files[j*params['batch_size']: (j+1)*params['batch_size']])
-            print('epoch = {}, training loss = {:.4f}, validation loss = {:.4f}'.format(epoch + 1, train_loss_per_epoch/(i+1), val_loss_per_epoch / (j + 1)))
+
+            # TODO: replace with actual_metrics
+            metric_score = seld_metrics.calculate_seld_metrics()
+            print('epoch = {}, tr_loss = {:.4f}, val_loss = {:.4f}, seld_metric = {:4f}'.format(epoch + 1, train_loss_per_epoch / (i + 1), val_loss_per_epoch / (j + 1), metric_score))
+            if metric_score > best_metric_score:
+                best_metric_score = metric_score
+                net_save = {'seld_model': seld_model.state_dict(), 'opt': optimizer.state_dict(), 'epoch': epoch, 'best_score': best_metric_score}
+                torch.save(net_save, checkpoints_folder + "/best_model.pth")
 
 
 if __name__ == '__main__':
