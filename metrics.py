@@ -26,7 +26,7 @@ class SELDMetrics():
         results will be at 'outputs/SELDnet_audio_visual_multiACCDOA_20250227_174427/eval/*.csv'
         so split value will be 'eval'
 
-    The forward function can return all the metrics you choose to have.
+    The calculate_seld_metrics function can return all the metrics you choose to have.
     add whatever parameters necessary to the parameters.py file as you wish.
     (Note: don't get confused with the output_dir in the params file. The output_dir argument in the init block here
      is 'outputs/followed_by_the_reference_name_like_the_example_above' )
@@ -37,7 +37,7 @@ class SELDMetrics():
         self.output_dir = output_dir
         self.split = split
 
-    def forward(self):
+    def calculate_seld_metrics(self):
         pass
 
 
