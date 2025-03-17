@@ -74,5 +74,11 @@ params = {
     'dev_synth_folds': ['fold1, fold2'],
 
     # metric params - DAVID
+    'average': 'macro',                 # Supports 'micro': sample-wise average and 'macro': class-wise average,
+    'segment_based_metrics': False,     # If True, uses segment-based metrics, else uses event-based metrics
+    'lad_doa_thresh': 20,               # DOA error threshold for computing the detection metrics
+    'lad_dist_thresh': float('inf'),    # Absolute distance error threshold for computing the detection metrics
+    'lad_reldist_thresh': float('0.5'), # Relative distance error threshold for computing the detection metrics
+    'lad_req_onscreen': True,           # Require correct on-screen estimation when computing the detection metrics
 
 }

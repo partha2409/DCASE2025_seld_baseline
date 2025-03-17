@@ -18,6 +18,8 @@ import numpy as np
 import cv2
 from PIL import Image
 import torch
+from scipy import stats
+from scipy.optimize import linear_sum_assignment
 
 
 def setup(params):
@@ -290,6 +292,32 @@ def process_labels_adpit(_desc_file, _nb_label_frames, _nb_unique_classes):
     return label_mat
 
 
+def organize_labels(input_dict, max_frames, max_tracks=10):
+    '''
+    :param input_dict: Dictionary containing frame-wise sound event time and location information
+            _pred_dict[frame-index] = [[class-index, source-index, azimuth, distance, onscreen] x events in frame]
+    :param max_frames: Total number of frames in the recording
+    :param max_tracks: Total number of tracks in the output dict
+    :return: Dictionary containing class-wise sound event location information in each frame
+            dictionary_name[frame-index][class-index][track-index] = [azimuth, distance, onscreen]
+    '''
+    tracks = set(range(max_tracks))
+    output_dict = {x: {} for x in range(max_frames)}
+    for frame_idx in range(0, max_frames):
+        if frame_idx not in input_dict:
+            continue
+        for [class_idx, source_idx, az, dist, onscreen] in input_dict[frame_idx]:
+            if class_idx not in output_dict[frame_idx]:
+                output_dict[frame_idx][class_idx] = {}
+            if source_idx not in output_dict[frame_idx][class_idx] and source_idx < max_tracks:
+                track_idx = source_idx  # If possible, use source_idx as track_idx
+            else:                       # If not, use the first one available
+                track_idx = list(set(tracks) - output_dict[frame_idx][class_idx].keys())[0]
+            output_dict[frame_idx][class_idx][track_idx] = [az, dist, onscreen]
+
+    return output_dict
+
+
 def convert_polar_to_cartesian(input_dict):
     output_dict = {}
     for frame_idx in input_dict.keys():
@@ -418,6 +446,21 @@ def distance_between_cartesian_coordinates(x1, y1, x2, y2):
     dist = np.clip(dist, -1, 1)
     dist = np.arccos(dist) * 180 / np.pi
     return dist
+
+
+def fold_az_angle(az):
+    """
+    Project azimuth angle into the range [-90, 90]
+
+    :param az: azimuth angle in degrees
+    :return: folded angle in degrees
+    """
+    # Fold az angles
+    az = (az + 180) % 360 - 180  # Make sure az is in the range [-180, 180)
+    az_fold = az.copy()
+    az_fold[np.logical_and(-180 <= az, az < -90)] = -180 - az[np.logical_and(-180 <= az, az < -90)]
+    az_fold[np.logical_and(90 < az, az <= 180)] = 180 - az[np.logical_and(90 < az, az <= 180)]
+    return az_fold
 
 
 def determine_similar_location(sed_pred0, sed_pred1, doa_pred0, doa_pred1, class_cnt, thresh_unify, nb_classes):
@@ -576,3 +619,69 @@ def write_logits_to_dcase_format(logits, params, output_dir, filelist, split='de
                                                               sed2_i, dummy_src_id2_i, doa2_i, dist2_i, on_screen2_i, params['thresh_unify'], params['nb_classes'], convert_to_polar=True)
             write_to_dcase_output_format(output_dict, output_dir, os.path.basename(filelist[i])[:-3] + '.csv', split)
 
+
+def jackknife_estimation(global_value, partial_estimates, significance_level=0.05):
+    """
+    Compute jackknife statistics from a global value and partial estimates.
+    Original function by Nicolas Turpault
+
+    :param global_value: Value calculated using all (N) examples
+    :param partial_estimates: Partial estimates using N-1 examples at a time
+    :param significance_level: Significance value used for t-test
+
+    :return:
+    estimate: estimated value using partial estimates
+    bias: Bias computed between global value and the partial estimates
+    std_err: Standard deviation of partial estimates
+    conf_interval: Confidence interval obtained after t-test
+    """
+
+    mean_jack_stat = np.mean(partial_estimates)
+    n = len(partial_estimates)
+    bias = (n - 1) * (mean_jack_stat - global_value)
+
+    std_err = np.sqrt(
+        (n - 1) * np.mean((partial_estimates - mean_jack_stat) * (partial_estimates - mean_jack_stat), axis=0)
+    )
+
+    # bias-corrected "jackknifed estimate"
+    estimate = global_value - bias
+
+    # jackknife confidence interval
+    if not (0 < significance_level < 1):
+        raise ValueError("confidence level must be in (0, 1).")
+
+    t_value = stats.t.ppf(1 - significance_level / 2, n - 1)
+
+    # t-test
+    conf_interval = estimate + t_value * np.array((-std_err, std_err))
+
+    return estimate, bias, std_err, conf_interval
+
+
+def least_distance_between_gt_pred(gt_list, pred_list):
+    """
+        Shortest distance between two sets of azimuth angles. Given a set of groundtruth coordinates,
+        and its respective predicted coordinates, we calculate the distance between each of the
+        coordinate pairs resulting in a matrix of distances, where one axis represents the number of groundtruth
+        coordinates and the other the predicted coordinates. The number of estimated peaks need not be the same as in
+        groundtruth, thus the distance matrix is not always a square matrix. We use the hungarian algorithm to find the
+        least cost in this distance matrix.
+        :param gt_list: list of ground-truth azimuth angles in degrees
+        :param pred_list: list of predicted azimuth angles in degrees
+        :return: cost - azimuth distance (after folding them to the range [-90, 90])
+        :return: row_ind - row indexes obtained from the Hungarian algorithm
+        :return: col_ind - column indexes obtained from the Hungarian algorithm
+    """
+    gt_len, pred_len = gt_list.shape[0], pred_list.shape[0]
+    ind_pairs = np.array([[x, y] for y in range(pred_len) for x in range(gt_len)])
+    cost_mat = np.zeros((gt_len, pred_len))
+
+    if gt_len and pred_len:
+        az1, az2 = gt_list[ind_pairs[:, 0]], pred_list[ind_pairs[:, 1]]
+        distances_ang = np.abs(fold_az_angle(az1) - fold_az_angle(az2))
+        cost_mat[ind_pairs[:, 0], ind_pairs[:, 1]] = distances_ang
+
+    row_ind, col_ind = linear_sum_assignment(cost_mat)
+    cost = cost_mat[row_ind, col_ind]
+    return cost, row_ind, col_ind
