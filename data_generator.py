@@ -57,7 +57,6 @@ class DataGenerator(Dataset):
         label_file = self.label_files[item]
         audio_features = torch.load(audio_file)
         labels = torch.load(label_file)
-
         if not self.params['multiACCDOA']:  # TODO: why masking and multiplication instead of simply omitting the first 13 entries?
             mask = labels[:, :self.params['nb_classes']]
             mask = mask.repeat(1, 4)

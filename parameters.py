@@ -11,7 +11,7 @@ Date: January 2025
 params = {
 
     # choose task
-    'modality': 'audio_visual',  # 'audio' or audio_visual'
+    'modality': 'audio',  # 'audio' or audio_visual'
     'net_type': 'SELDnet',
 
     # data params
@@ -54,11 +54,11 @@ params = {
     'label_sequence_length': 50,  # 5 seconds with 100ms frames
 
     # loss params
-    'multiACCDOA': True,
+    'multiACCDOA': False,
     'thresh_unify': 15,
 
     # training params
-    'nb_epochs': 10,
+    'nb_epochs': 200,
     'batch_size': 64,
     'nb_workers': 0,
     'shuffle': True,
@@ -74,11 +74,11 @@ params = {
     'dev_synth_folds': ['fold1, fold2'],
 
     # metric params - DAVID
-    'average': 'macro',                 # Supports 'micro': sample-wise average and 'macro': class-wise average,
-    'segment_based_metrics': False,     # If True, uses segment-based metrics, else uses event-based metrics
-    'lad_doa_thresh': 20,               # DOA error threshold for computing the detection metrics
-    'lad_dist_thresh': float('inf'),    # Absolute distance error threshold for computing the detection metrics
-    'lad_reldist_thresh': float('0.5'), # Relative distance error threshold for computing the detection metrics
-    'lad_req_onscreen': True,           # Require correct on-screen estimation when computing the detection metrics
+    'average': 'macro',                  # Supports 'micro': sample-wise average and 'macro': class-wise average,
+    'segment_based_metrics': False,      # If True, uses segment-based metrics, else uses event-based metrics
+    'lad_doa_thresh': 20,                # DOA error threshold for computing the detection metrics
+    'lad_dist_thresh': float('inf'),     # Absolute distance error threshold for computing the detection metrics
+    'lad_reldist_thresh': float('0.5'),  # Relative distance error threshold for computing the detection metrics
+    'lad_req_onscreen': True,            # Require correct on-screen estimation when computing the detection metrics
 
 }

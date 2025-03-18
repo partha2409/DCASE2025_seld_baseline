@@ -7,13 +7,13 @@ including data preparation, model training, and evaluation.
 Author: Parthasaarathy Sudarsanam, Audio Research Group, Tampere University
 Date: January 2025
 """
-
+import os.path
 
 import torch
 from parameters import params
 from model import SELDModel
 from loss import SELDLossADPIT, SELDLossSingleACCDOA
-from metrics import SELDMetrics
+from metrics import ComputeSELDResults
 from data_generator import DataGenerator
 from torch.utils.data import DataLoader
 from extract_features import SELDFeatureExtractor
@@ -78,10 +78,9 @@ def val_epoch(seld_model, dev_test_iterator, seld_loss, seld_metrics, output_dir
             utils.write_logits_to_dcase_format(logits, params, output_dir, dev_test_iterator.dataset.label_files[j * params['batch_size']: (j + 1) * params['batch_size']])
         avg_val_loss = val_loss_per_epoch / len(dev_test_iterator)
 
-        # TODO: Replace with actual metrics calculation
-        metric_score = seld_metrics.calculate_seld_metrics()
+        metric_scores = seld_metrics.get_SELD_Results(pred_files_path=os.path.join(output_dir, 'dev-test'))
 
-        return avg_val_loss, metric_score
+        return avg_val_loss, metric_scores
 
 
 def main(pre_trained_model=None):
@@ -110,31 +109,42 @@ def main(pre_trained_model=None):
     else:
         seld_loss = SELDLossSingleACCDOA(params=params).to(device)
 
-    seld_metrics = SELDMetrics(params=params, output_dir=output_dir, split='dev_test')
+    seld_metrics = ComputeSELDResults(params=params, ref_files_folder=os.path.join(params['root_dir'], 'metadata_dev'))
 
     start_epoch = 0
-    best_metric_score = float('-inf')
+    best_f_score = float('-inf')
+
     # load pretrained model if available to continue training
     if pre_trained_model is not None:
         ckpt = torch.load(pre_trained_model)
         seld_model.load_state_dict(ckpt['seld_model'])
         optimizer.load_state_dict(ckpt['opt'])
         start_epoch = ckpt['epoch'] + 1
-        best_metric_score = ckpt['best_score']
+        # best_f_score = ckpt['best_f_score']
 
     for epoch in range(start_epoch, params['nb_epochs']):
         # ------------- Training -------------- #
         avg_train_loss = train_epoch(seld_model, dev_train_iterator, optimizer, seld_loss)
         # -------------  Validation -------------- #
-        avg_val_loss, metric_score = val_epoch(seld_model, dev_test_iterator, seld_loss, seld_metrics, output_dir)
-        # ------------- Log losses and metrics ------------- #
-        print('epoch = {}/{}, tr_loss = {:.4f}, val_loss = {:.4f}, seld_metric = {:4f}'
-              .format(epoch + 1, params['nb_epochs'], avg_train_loss, avg_val_loss, metric_score))
+        avg_val_loss, metric_scores = val_epoch(seld_model, dev_test_iterator, seld_loss, seld_metrics, output_dir)
+        val_f, val_ang_error, val_dist_error, val_rel_dist_error, val_onscreen_acc, val_classwise_test_scr = metric_scores
 
+        # ------------- Log losses and metrics ------------- #
+
+        print(
+            f"Epoch {epoch + 1}/{params['nb_epochs']} | "
+            f"Train Loss: {avg_train_loss:.2f} | "
+            f"Val Loss: {avg_val_loss:.2f} | "
+            f"F-score: {val_f*100:.2f} | " 
+            f"Ang Err: {val_ang_error:.2f} | "
+            f"Dist Err: {val_dist_error:.2f} | "
+            f"Rel Dist Err: {val_rel_dist_error:.2f} | "
+            f"On-Screen Acc: {val_onscreen_acc:.2f}"
+        )
         # ------------- Save model if validation score improves -------------#
-        if metric_score > best_metric_score:
-            best_metric_score = metric_score
-            net_save = {'seld_model': seld_model.state_dict(), 'opt': optimizer.state_dict(), 'epoch': epoch, 'best_score': best_metric_score}
+        if val_f >= best_f_score:
+            best_f_score = val_f
+            net_save = {'seld_model': seld_model.state_dict(), 'opt': optimizer.state_dict(), 'epoch': epoch, 'best_f_score': best_f_score}
             torch.save(net_save, checkpoints_folder + "/best_model.pth")
 
 
