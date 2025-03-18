@@ -66,6 +66,11 @@ def load_audio(audio_file, sampling_rate):
     return audio_data, sr
 
 
+def extract_stft(audio, n_fft, hop_length, win_length):
+    stft = librosa.stft(y=audio, n_fft=n_fft, hop_length=hop_length, win_length=win_length).T
+    return stft
+
+
 def extract_log_mel_spectrogram(audio, sr, n_fft, hop_length, win_length, nb_mels):
     """
     Computes the log Mel spectrogram from an audio signal.
@@ -82,7 +87,7 @@ def extract_log_mel_spectrogram(audio, sr, n_fft, hop_length, win_length, nb_mel
         ndarray: Array of shape (2, time_frames, nb_mels) - log Mel spectrogram for each channel.
     """
 
-    linear_stft = librosa.stft(y=audio, n_fft=n_fft, hop_length=hop_length, win_length=win_length).T
+    linear_stft = extract_stft(audio, n_fft, hop_length, win_length)
     linear_stft_mag = np.abs(linear_stft) ** 2
     mel_spec = librosa.feature.melspectrogram(S=linear_stft_mag, sr=sr, n_mels=nb_mels)
     log_mel_spectrogram = librosa.power_to_db(mel_spec)
@@ -293,14 +298,14 @@ def process_labels_adpit(_desc_file, _nb_label_frames, _nb_unique_classes):
 
 
 def organize_labels(input_dict, max_frames, max_tracks=10):
-    '''
+    """
     :param input_dict: Dictionary containing frame-wise sound event time and location information
             _pred_dict[frame-index] = [[class-index, source-index, azimuth, distance, onscreen] x events in frame]
     :param max_frames: Total number of frames in the recording
     :param max_tracks: Total number of tracks in the output dict
     :return: Dictionary containing class-wise sound event location information in each frame
             dictionary_name[frame-index][class-index][track-index] = [azimuth, distance, onscreen]
-    '''
+    """
     tracks = set(range(max_tracks))
     output_dict = {x: {} for x in range(max_frames)}
     for frame_idx in range(0, max_frames):
@@ -441,7 +446,7 @@ def distance_between_cartesian_coordinates(x1, y1, x2, y2):
     N2 = np.sqrt(x2**2 + y2**2 + 1e-10)
     x1, y1, x2, y2 = x1/N1, y1/N1, x2/N2, y2/N2
 
-    #Compute the distance
+    # Compute the distance
     dist = x1*x2 + y1*y2
     dist = np.clip(dist, -1, 1)
     dist = np.arccos(dist) * 180 / np.pi
@@ -585,7 +590,7 @@ def get_output_dict_format_multi_accdoa(sed0, dummy_src_id0, doa0, dist0, on_scr
     return output_dict
 
 
-def write_to_dcase_output_format(output_dict, output_dir, filename, split):
+def write_to_dcase_output_format(output_dict, output_dir, filename, split, convert_dist_to_cm=True):
     os.makedirs(os.path.join(output_dir, split), exist_ok=True)
     file_path = os.path.join(output_dir,split, filename)
     with open(file_path, 'w') as f:
@@ -593,7 +598,9 @@ def write_to_dcase_output_format(output_dict, output_dir, filename, split):
         # Write data
         for frame_ind, values in output_dict.items():
             for value in values:
-                f.write(f"{int(frame_ind)},{int(value[0])},{int(value[1])},{float(value[2]):.2f},{float(value[3]):.2f},{int(value[4])}\n")
+                azimuth_rounded = round(float(value[2]))
+                dist_rounded = round(float(value[3]) * 100) if convert_dist_to_cm else round(float(value[3]))
+                f.write(f"{int(frame_ind)},{int(value[0])},{int(value[1])},{azimuth_rounded},{dist_rounded},{int(value[4])}\n")
 
 
 def write_logits_to_dcase_format(logits, params, output_dir, filelist, split='dev-test'):
@@ -661,11 +668,11 @@ def jackknife_estimation(global_value, partial_estimates, significance_level=0.0
 
 def least_distance_between_gt_pred(gt_list, pred_list):
     """
-        Shortest distance between two sets of azimuth angles. Given a set of groundtruth coordinates,
+        Shortest distance between two sets of azimuth angles. Given a set of ground truth coordinates,
         and its respective predicted coordinates, we calculate the distance between each of the
-        coordinate pairs resulting in a matrix of distances, where one axis represents the number of groundtruth
+        coordinate pairs resulting in a matrix of distances, where one axis represents the number of ground truth
         coordinates and the other the predicted coordinates. The number of estimated peaks need not be the same as in
-        groundtruth, thus the distance matrix is not always a square matrix. We use the hungarian algorithm to find the
+        ground truth, thus the distance matrix is not always a square matrix. We use the hungarian algorithm to find the
         least cost in this distance matrix.
         :param gt_list: list of ground-truth azimuth angles in degrees
         :param pred_list: list of predicted azimuth angles in degrees
