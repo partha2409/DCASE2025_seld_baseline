@@ -157,7 +157,7 @@ class SELDFeatureExtractor():
 
             # If the feature file doesn't exist, perform extraction
             label_data = utils.load_labels(label_file)
-            if params['multiACCDOA']:
+            if self.params['multiACCDOA']:
                 processed_labels = utils.process_labels_adpit(label_data, self.nb_label_frames, self.nb_unique_classes)
             else:
                 processed_labels = utils.process_labels(label_data, self.nb_label_frames, self.nb_unique_classes)
