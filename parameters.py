@@ -73,7 +73,7 @@ params = {
     'dev_test_folds': ['fold4'],
     'dev_synth_folds': ['fold1, fold2'],
 
-    # metric params - DAVID
+    # metric params
     'average': 'macro',                  # Supports 'micro': sample-wise average and 'macro': class-wise average,
     'segment_based_metrics': False,      # If True, uses segment-based metrics, else uses event-based metrics
     'lad_doa_thresh': 20,                # DOA error threshold for computing the detection metrics

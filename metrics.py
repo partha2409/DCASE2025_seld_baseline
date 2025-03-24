@@ -12,6 +12,7 @@ Date: February 2025
 import numpy as np
 from utils import least_distance_between_gt_pred, jackknife_estimation, load_labels, organize_labels
 import os
+import warnings
 
 
 class SELDMetrics(object):
@@ -143,7 +144,7 @@ class SELDMetrics(object):
                 if nb_gt_doas is not None:
                     self._Nref[class_cnt] += nb_gt_doas
                 if class_cnt in gt[frame_cnt] and class_cnt in pred[frame_cnt]:
-                    # True positives or False positive case         TODO: Is FP really included in this case?
+                    # True positives
 
                     # NOTE: For multiple tracks per class, associate the predicted DOAs to corresponding reference
                     # DOA-tracks using hungarian algorithm on the azimuth estimation and then compute the average
@@ -224,14 +225,19 @@ class ComputeSELDResults(object):
         self._dist_thresh = params['lad_dist_thresh']
         self._reldist_thresh = params['lad_reldist_thresh']
         self._req_onscreen = params['lad_req_onscreen']
-        self._max_polyphony = params['max_polyphony']
+
+        if params['modality'] == 'audio' and params['lad_req_onscreen']:
+            warnings.warn("'lad_req_onscreen' was set to True in the parameters, but 'modality' was 'audio'. "
+                          "It doesn't make sense requesting a correct onscreen estimation for the detection metrics "
+                          "with an audio-only model. The metrics will be computed as if lad_req_onscreen was False.")
+            self._req_onscreen = False
 
         # collect reference files
         self._ref_labels = {}
         for split in os.listdir(self._desc_dir):
             for ref_file in os.listdir(os.path.join(self._desc_dir, split)):
                 # Load reference description file
-                gt_dict = load_labels(os.path.join(self._desc_dir, split, ref_file), convert_to_cartesian=False)  # TODO: Last year this would have been true? why?
+                gt_dict = load_labels(os.path.join(self._desc_dir, split, ref_file), convert_to_cartesian=False)
                 nb_ref_frames = max(list(gt_dict.keys())) if len(gt_dict) > 0 else 0
                 self._ref_labels[ref_file] = [organize_labels(gt_dict, nb_ref_frames),
                                               nb_ref_frames]
@@ -255,7 +261,7 @@ class ComputeSELDResults(object):
         pred_labels_dict = {}
         for pred_cnt, pred_file in enumerate(pred_files):
             # Load predicted output format file
-            pred_dict = load_labels(os.path.join(pred_files_path, pred_file), convert_to_cartesian=False)  # TODO: Last year this would have been true? why?
+            pred_dict = load_labels(os.path.join(pred_files_path, pred_file), convert_to_cartesian=False)
             nb_pred_frames = max(list(pred_dict.keys())) if len(pred_dict) > 0 else 0
             nb_ref_frames = self._ref_labels[pred_file][1]
             pred_labels = organize_labels(pred_dict, max(nb_pred_frames, nb_ref_frames))
