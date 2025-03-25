@@ -20,7 +20,7 @@ from PIL import Image
 import torch
 from scipy import stats
 from scipy.optimize import linear_sum_assignment
-
+import warnings
 
 def setup(params):
     """
@@ -317,7 +317,12 @@ def organize_labels(input_dict, max_frames, max_tracks=10):
             if source_idx not in output_dict[frame_idx][class_idx] and source_idx < max_tracks:
                 track_idx = source_idx  # If possible, use source_idx as track_idx
             else:                       # If not, use the first one available
-                track_idx = list(set(tracks) - output_dict[frame_idx][class_idx].keys())[0]
+                try:
+                    track_idx = list(set(tracks) - output_dict[frame_idx][class_idx].keys())[0]
+                except IndexError:
+                    warnings.warn("The number of sources of is higher than the number of tracks. "
+                                  "Some events will be missed.")
+                    track_idx = 0  # Overwrite one event
             output_dict[frame_idx][class_idx][track_idx] = [az, dist, onscreen]
 
     return output_dict

@@ -316,7 +316,7 @@ class ComputeSELDResults(object):
 if __name__ == '__main__':
     # use this to test if the metrics class works as expected. All the classes will be called from the main.py for
     # actual use
-    pred_output_files = 'outputs/SELD_fake_estimates/dev-test-tau'  # Path of the DCASE output format files
+    pred_output_files = 'outputs/SELD_fake_estimates/dev-test'  # Path of the DCASE output format files
     from parameters import params
     # Compute just the DCASE final results
     use_jackknife = False
