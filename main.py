@@ -7,8 +7,8 @@ including data preparation, model training, and evaluation.
 Author: Parthasaarathy Sudarsanam, Audio Research Group, Tampere University
 Date: January 2025
 """
-import os.path
 
+import os.path
 import torch
 from parameters import params
 from model import SELDModel
@@ -128,24 +128,25 @@ def main(pre_trained_model=None):
         # -------------  Validation -------------- #
         avg_val_loss, metric_scores = val_epoch(seld_model, dev_test_iterator, seld_loss, seld_metrics, output_dir)
         val_f, val_ang_error, val_dist_error, val_rel_dist_error, val_onscreen_acc, val_classwise_test_scr = metric_scores
-
         # ------------- Log losses and metrics ------------- #
 
         print(
             f"Epoch {epoch + 1}/{params['nb_epochs']} | "
             f"Train Loss: {avg_train_loss:.2f} | "
             f"Val Loss: {avg_val_loss:.2f} | "
-            f"F-score: {val_f*100:.2f} | " 
+            f"F-score: {val_f * 100:.2f} | "
             f"Ang Err: {val_ang_error:.2f} | "
             f"Dist Err: {val_dist_error:.2f} | "
-            f"Rel Dist Err: {val_rel_dist_error:.2f} | "
-            f"On-Screen Acc: {val_onscreen_acc:.2f}"
+            f"Rel Dist Err: {val_rel_dist_error:.2f}" +
+            (f" | On-Screen Acc: {val_onscreen_acc:.2f}" if params['modality'] == 'audio_visual' else "")
         )
         # ------------- Save model if validation score improves -------------#
         if val_f >= best_f_score:
             best_f_score = val_f
             net_save = {'seld_model': seld_model.state_dict(), 'opt': optimizer.state_dict(), 'epoch': epoch, 'best_f_score': best_f_score}
             torch.save(net_save, checkpoints_folder + "/best_model.pth")
+
+    # Evaluate the best model on dev-test.
 
 
 if __name__ == '__main__':

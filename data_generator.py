@@ -30,7 +30,7 @@ class DataGenerator(Dataset):
         Initializes the DataGenerator instance.
         Args:
             params (dict): Parameters for data generation.
-            mode (str): data split ('dev_train', 'dev_test', 'dev_synth').
+            mode (str): data split ('dev_train', 'dev_test').
         """
 
         super().__init__()
@@ -123,14 +123,11 @@ class DataGenerator(Dataset):
             list: List of folds.
         """
         if self.mode == 'dev_train':
-            return self.params['dev_train_folds']  # fold 3
+            return self.params['dev_train_folds']  # fold 1, fold 3
         elif self.mode == 'dev_test':
             return self.params['dev_test_folds']  # fold 4
-        elif self.mode == 'dev_synth':
-            assert self.modality == 'audio', "Modality must be set to 'audio' for 'dev_synth' mode, as there are no synthetic videos."
-            return self.params['dev_synth_folds']  # fold 1 and fold 2
         else:
-            raise ValueError(f"Invalid mode: {self.mode}. Choose from ['dev_train', 'dev_test', 'dev_synth'].")
+            raise ValueError(f"Invalid mode: {self.mode}. Choose from ['dev_train', 'dev_test'].")
 
 
 if __name__ == '__main__':

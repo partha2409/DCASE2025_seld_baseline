@@ -22,6 +22,7 @@ from scipy import stats
 from scipy.optimize import linear_sum_assignment
 import warnings
 
+
 def setup(params):
     """
     Sets up the environment for training by creating directories for model checkpoints

@@ -11,7 +11,7 @@ Date: January 2025
 params = {
 
     # choose task
-    'modality': 'audio',  # 'audio' or audio_visual'
+    'modality': 'audio',  # 'audio' or 'audio_visual'
     'net_type': 'SELDnet',
 
     # data params
@@ -21,6 +21,7 @@ params = {
     'log_dir': 'logs',  # save all logs here like loss and metrics
     'checkpoints_dir': 'checkpoints',  # save trained model checkpoints and config
     'output_dir': 'outputs',  # save the predicted files here.
+
 
     # audio feature extraction params
     'sampling_rate': 24000,
@@ -66,12 +67,12 @@ params = {
 
     # optimizer params
     'learning_rate': 1e-4,
-    'weight_decay': 1e-2,
+    #'weight_decay': 1e-2,
+    'weight_decay': 0,
 
     # folds for training, testing
-    'dev_train_folds': ['fold3'],
+    'dev_train_folds': ['fold2', 'fold3'],
     'dev_test_folds': ['fold4'],
-    'dev_synth_folds': ['fold1, fold2'],
 
     # metric params
     'average': 'macro',                  # Supports 'micro': sample-wise average and 'macro': class-wise average,
@@ -79,6 +80,6 @@ params = {
     'lad_doa_thresh': 20,                # DOA error threshold for computing the detection metrics
     'lad_dist_thresh': float('inf'),     # Absolute distance error threshold for computing the detection metrics
     'lad_reldist_thresh': float('0.5'),  # Relative distance error threshold for computing the detection metrics
-    'lad_req_onscreen': True,            # Require correct on-screen estimation when computing the detection metrics
+    'lad_req_onscreen': False,            # Require correct on-screen estimation when computing the detection metrics
 
 }

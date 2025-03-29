@@ -94,11 +94,11 @@ class SELDMetrics(object):
                         eps + self._TP.sum() + self._FP_spatial.sum() + 0.5 * (self._FP.sum() + self._FN.sum()))
 
             # Class-sensitive localization performance
-            AngE = self._total_AngE.sum() / float(self._DE_TP.sum() + eps) if self._DE_TP.sum() else np.NaN
-            DistE = self._total_DistE.sum() / float(self._DE_TP.sum() + eps) if self._DE_TP.sum() else np.NaN
-            RelDistE = self._total_RelDistE.sum() / float(self._DE_TP.sum() + eps) if self._DE_TP.sum() else np.NaN
+            AngE = self._total_AngE.sum() / float(self._DE_TP.sum() + eps) if self._DE_TP.sum() else np.nan
+            DistE = self._total_DistE.sum() / float(self._DE_TP.sum() + eps) if self._DE_TP.sum() else np.nan
+            RelDistE = self._total_RelDistE.sum() / float(self._DE_TP.sum() + eps) if self._DE_TP.sum() else np.nan
             OnscreenAq = self._total_OnscreenCorrect.sum() / float(
-                self._DE_TP.sum() + eps) if self._DE_TP.sum() else np.NaN
+                self._DE_TP.sum() + eps) if self._DE_TP.sum() else np.nan
 
         elif self._average == 'macro':
             # Location-sensitive detection performance
@@ -106,13 +106,13 @@ class SELDMetrics(object):
 
             # Class-sensitive localization performance
             AngE = self._total_AngE / (self._DE_TP + eps)
-            AngE[self._DE_TP == 0] = np.NaN
+            AngE[self._DE_TP == 0] = np.nan
             DistE = self._total_DistE / (self._DE_TP + eps)
-            DistE[self._DE_TP == 0] = np.NaN
+            DistE[self._DE_TP == 0] = np.nan
             RelDistE = self._total_RelDistE / (self._DE_TP + eps)
-            RelDistE[self._DE_TP == 0] = np.NaN
+            RelDistE[self._DE_TP == 0] = np.nan
             OnscreenAq = self._total_OnscreenCorrect / (self._DE_TP + eps)
-            OnscreenAq[self._DE_TP == 0] = np.NaN
+            OnscreenAq[self._DE_TP == 0] = np.nan
 
             classwise_results = np.array([F, AngE, DistE, RelDistE, OnscreenAq])
             F, AngE = F.mean(), np.nanmean(AngE)
@@ -227,9 +227,9 @@ class ComputeSELDResults(object):
         self._req_onscreen = params['lad_req_onscreen']
 
         if params['modality'] == 'audio' and params['lad_req_onscreen']:
-            warnings.warn("'lad_req_onscreen' was set to True in the parameters, but 'modality' was 'audio'. "
-                          "It doesn't make sense requesting a correct onscreen estimation for the detection metrics "
-                          "with an audio-only model. The metrics will be computed as if lad_req_onscreen was False.")
+            warnings.warn("'lad_req_onscreen' is set to True, but 'modality' is 'audio'. "
+                          "Onscreen estimation for detection metrics is not applicable to an audio-only model. "
+                          "Resetting 'lad_req_onscreen' To False.")
             self._req_onscreen = False
 
         # collect reference files
