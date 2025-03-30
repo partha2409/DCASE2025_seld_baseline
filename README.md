@@ -11,7 +11,7 @@ Participants must detect sound events along with their direction of arrival (DOA
 ## Baseline Model
 
 <p align="center">
-   <img src="images/DCASE2025_AV_SELD_baseline_architecture.png" width="400" title="Audiovisual SELDnet with Multi-ACCDDOA Architecture">
+   <img src="images/DCASE2025_AV_SELD_baseline_architecture.png" width="600" title="Audiovisual SELDnet with Multi-ACCDDOA Architecture">
 </p>
 
 For the audio baseline, we modify the SELDnet studied in [1]. We introduced multi-head self-attention blocks in the SELDnet architecture based on the findings in [4]. For the output format, to support the detection of multiple instances of the same class overlapping we use the  Multi-ACCDOA representation [2] including distance estimation [5]. For the audio-visual baseline, inspired by the work in [3], we extract ResNet-50 features for the video frames corresponding to the input audio. The frame rate is set to 10fps. The visual features are fused with the audio features using transformer decoder blocks. The output of the transformer block is fed to linear layers for obtaining the Multi-ACCDDOA representation.
