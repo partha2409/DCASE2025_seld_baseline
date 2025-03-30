@@ -1,13 +1,57 @@
-**DCASE 2025 Sound Event Localization and Detection (SELD) Baseline**
+# DCASE 2025 Task 3 Baseline: Stereo sound event localization and detection in regular video content
+
+[Please visit the official webpage of the DCASE 2025 Challenge for the task details](https://dcase.community/challenge2025/task-stereo-sound-event-localization-and-detection-in-regular-video-content).
+
+This year's challenge features both an **audio-only** and an **audio-visual** track. Unlike previous editions, which utilized four-channel FOA/MIC format audio and 360-degree video, this year's challenge employs **stereo audio** and **standard video**. The dataset used for this challenge, StereoSELD, is derived from the STARSS23 dataset, with each sample having a duration of 5 seconds. Details on the StereoSELD dataset creation process can be found in [text][link].
+
+## Task Overview
+
+Participants must detect sound events along with their direction of arrival (DOA) and distance. In the audio-visual track, an additional task involves determining whether a detected sound event is on-screen or off-screen. Since the input audio is stereo, participants are only required to predict the azimuth DOA. Furthermore, to address front-back confusion, all DOA values corresponding to the rear hemisphere are mapped to the front hemisphere.
+
+## Baseline Model
+
+figure here
+
+For the audio baseline, we modify the SELDnet studied in [1]. We introduced multi-head self-attention blocks in the SELDnet architecture based on the findings in [4]. For the output format, to support the detection of multiple instances of the same class overlapping we use the  Multi-ACCDOA representation [2] including distance estimation [5]. For the audio-visual baseline, inspired by the work in [3], we extract ResNet-50 features for the video frames corresponding to the input audio. The frame rate is set to 10fps. The visual features are fused with the audio features using transformer decoder blocks. The output of the transformer block is fed to linear layers for obtaining the Multi-ACCDDOA representation.
+
+The input is the stereo audio and their corresponding video frames from which log-mel spectrogram and ResNet-50 features are extracted respectively. The model predicts all the active sound event classes for each frame along with their respective spatial location, producing the temporal activity and DOA trajectory for each sound event class. Each sound event class in the Multi-ACCDOA output is represented by three regressors that estimate the Cartesian coordinates x, y axes of the azimuth DOA around the microphone and a distance value. In case of the audio-visual model, there is an additional binary output neuron that predicts whether the sound event is within the video frame or outside of it. 
+
+
+1. [Sharath Adavanne, Archontis Politis, Joonas Nikunen and Tuomas Virtanen, "Sound event localization and detection of overlapping sources using convolutional recurrent neural network" in IEEE Journal of Selected Topics in Signal Processing (JSTSP 2018)](https://arxiv.org/pdf/1807.00129.pdf)
+2. [Kazuki Shimada, Yuichiro Koyama, Shusuke Takahashi, Naoya Takahashi, Emiru Tsunoo, and Yuki Mitsufuji, " Multi-ACCDOA: localizing and detecting overlapping sounds from the same class with auxiliary duplicating permutation invariant training" in The International Conference on Acoustics, Speech, & Signal Processing (ICASSP 2022)](https://arxiv.org/pdf/2110.07124.pdf)
+3. [Davide Berghi, Peipei Wu, Jinzheng Zhao, Wenwu Wang, Philip J. B. Jackson, "Fusion of audio and audiovisual embeddings for sound event localization and detection" in the International Conference on Acoustics, Speech, & Signal Processing (ICASSP 2024)](https://arxiv.org/pdf/2312.09034.pdf)
+4. [Parthasaarathy Sudarsanam, Archontis Politis, Konstantinos Drossos, "Assessment of Self-Attention on Learned Features For Sound Event Localization and Detection" in Proceedings of the 6th Detection and Classification of Acoustic Scenes and Events 2021 Workshop (DCASE2021)](https://dcase.community/documents/workshop2021/proceedings/DCASE2021Workshop_Sudarsanam_38.pdf)
+5. [Daniel Aleksander Krause, Archontis Politis, Annamaria Mesaros, "Sound Event Detection and Localization with Distance Estimation" in arXiv: 2403.11827](https://arxiv.org/abs/2403.11827)
+
+## Dataset
+
+The stereoSELD dataset, derived from STARSS23, comprises 30,000 real recordings, each 5 seconds long. Each recording includes stereo audio, standard video, and the corresponding detection and localization labels. For further details, please refer to the task description webpage.
+
+Additional audio-visual synthetic data can be generated using Spatial scaper library and 
+
+ **NOTE : Participants must use the fixed development test split provided in the baseline method for reporting development scores. The evaluation set will be released at a later stage.**
+
+The development dataset can be downloaded from the link - [**Sony-TAu Realistic Spatial Soundscapes 2023 (STARSS23)**](https://doi.org/10.5281/zenodo.7709052) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7709052.svg)](https://doi.org/10.5281/zenodo.7709052)
 
 ## Project Structure
 
 * `main.py` script serves as the entry point for the project. It coordinates all other scripts and executes the workflow.
 * `data_generator.py` script is responsible for generating data and labels for training and evaluation.
 * `extract_features.py` script extracts relevant features from the raw data (audio, visuals and labels(accdoa or multiaccdoa format)) to be used for model training.
-* `inference.py` script handles model inference, allowing predictions on eval data.
+* `inference.py` script handles model inference, allowing predictions on the trained model.
 * `loss.py` script defines singleaccdoa and multiaccdoa(adpit) loss functions used during training.
 * `metrics.py` script implements different evaluation metrics to assess model performance.
 * `model.py` script defines the seld model architecture.
 * `parameters.py` script contains all hyperparameters and configurations. If a user needs to modify parameters, they should update them here.
 * `utils.py` script includes various utility functions used throughout the project.
+  
+
+## Submission
+
+* Make sure the file-wise output you are submitting is produced at 100 ms hop length. At this hop length a 60 s audio file has 600 frames.
+
+For more information on the submission file formats, [check the task webpage](https://dcase.community/challenge2025/task-stereo-sound-event-localization-and-detection-in-regular-video-content#submission)
+
+## License
+
+This repo and its contents have the MIT License.
