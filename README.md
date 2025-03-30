@@ -49,7 +49,7 @@ As the [SELD evaluation metric](https://www.aane.in/research/computational-audio
 - **F-score (F<sub>20°</sub>)** – Primarily focused on detection, considering a prediction correct only if:
   - The predicted and reference class match.
   - The DOA angular error is within **20°**.
-  - The relative distance error is below **0.5**.
+  - The relative distance error is below **1.0**.
 
 - **DOA Angular Error (DOAE<sub>CD</sub>)** – Measures the class-dependent doa error in degrees.
 
