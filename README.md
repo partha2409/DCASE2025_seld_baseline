@@ -17,11 +17,7 @@ For the audio baseline, we modify the SELDnet studied in [1]. We introduced mult
 The input is the stereo audio and their corresponding video frames from which log-mel spectrogram and ResNet-50 features are extracted respectively. The model predicts all the active sound event classes for each frame along with their respective spatial location, producing the temporal activity and DOA trajectory for each sound event class. Each sound event class in the Multi-ACCDOA output is represented by three regressors that estimate the Cartesian coordinates x, y axes of the azimuth DOA around the microphone and a distance value. In case of the audio-visual model, there is an additional binary output neuron that predicts whether the sound event is within the video frame or outside of it. 
 
 
-1. [Sharath Adavanne, Archontis Politis, Joonas Nikunen and Tuomas Virtanen, "Sound event localization and detection of overlapping sources using convolutional recurrent neural network" in IEEE Journal of Selected Topics in Signal Processing (JSTSP 2018)](https://arxiv.org/pdf/1807.00129.pdf)
-2. [Kazuki Shimada, Yuichiro Koyama, Shusuke Takahashi, Naoya Takahashi, Emiru Tsunoo, and Yuki Mitsufuji, " Multi-ACCDOA: localizing and detecting overlapping sounds from the same class with auxiliary duplicating permutation invariant training" in The International Conference on Acoustics, Speech, & Signal Processing (ICASSP 2022)](https://arxiv.org/pdf/2110.07124.pdf)
-3. [Davide Berghi, Peipei Wu, Jinzheng Zhao, Wenwu Wang, Philip J. B. Jackson, "Fusion of audio and audiovisual embeddings for sound event localization and detection" in the International Conference on Acoustics, Speech, & Signal Processing (ICASSP 2024)](https://arxiv.org/pdf/2312.09034.pdf)
-4. [Parthasaarathy Sudarsanam, Archontis Politis, Konstantinos Drossos, "Assessment of Self-Attention on Learned Features For Sound Event Localization and Detection" in Proceedings of the 6th Detection and Classification of Acoustic Scenes and Events 2021 Workshop (DCASE2021)](https://dcase.community/documents/workshop2021/proceedings/DCASE2021Workshop_Sudarsanam_38.pdf)
-5. [Daniel Aleksander Krause, Archontis Politis, Annamaria Mesaros, "Sound Event Detection and Localization with Distance Estimation" in arXiv: 2403.11827](https://arxiv.org/abs/2403.11827)
+
 
 ## Dataset
 
@@ -44,13 +40,47 @@ The development dataset can be downloaded from the link - [**Sony-TAu Realistic 
 * `model.py` script defines the seld model architecture.
 * `parameters.py` script contains all hyperparameters and configurations. If a user needs to modify parameters, they should update them here.
 * `utils.py` script includes various utility functions used throughout the project.
-  
+
+## Results on development dataset
+
+### Metrics Overview
+As the [SELD evaluation metric](https://www.aane.in/research/computational-audio-scene-analysis-casa/sound-event-localization-detection-and-tracking#h.ragsbsp7ujs) we employ the joint localization and detection metrics proposed in [6], with extensions from [2, 5] to support multi-instance scoring of the same class and distance estimation.
+
+- **F-score (F<sub>20°</sub>)** – Primarily focused on detection, considering a prediction correct only if:
+  - The predicted and reference class match.
+  - The DOA angular error is within **20°**.
+  - The relative distance error is below **0.5**.
+
+- **DOA Angular Error (DOAE<sub>CD</sub>)** – Measures the class-dependent doa error in degrees.
+
+- **Relative Distance Error (RDE<sub>CD</sub>)** – Defined as the difference between the estimated and reference distances, normalized by the reference distance.
+- **On-screen/Off-screen accuracy** - Additionally, for the audio-visual track, we also evaluate the accuracy of predicting whether a detected sound event is on-screen or off-screen.
+
+Unlike location-aware detection, no angular or distance thresholds are applied for **DOAE<sub>CD</sub>** and **RDE<sub>CD</sub>**.
+
+The evaluation metric scores for the test split of the development dataset is given below. 
+
+| Dataset | F<sub>20°</sub> | DOAE<sub>CD</sub> | RDE<sub>CD</sub> | on/off screen accuracy |
+| ----| --- | --- | --- | --- |
+| Audio only | % | &deg; | 0. | 0. |
+| Audio-visual| % | &deg; | 0. | 0. |
+
+**Note:** The reported baseline system performance is not exactly reproducible due to varying setups. However, you should be able to obtain very similar results.
 
 ## Submission
 
 * Make sure the file-wise output you are submitting is produced at 100 ms hop length. At this hop length a 60 s audio file has 600 frames.
 
 For more information on the submission file formats, [check the task webpage](https://dcase.community/challenge2025/task-stereo-sound-event-localization-and-detection-in-regular-video-content#submission)
+
+## References
+
+1. [Sharath Adavanne, Archontis Politis, Joonas Nikunen and Tuomas Virtanen, "Sound event localization and detection of overlapping sources using convolutional recurrent neural network" in IEEE Journal of Selected Topics in Signal Processing (JSTSP 2018)](https://arxiv.org/pdf/1807.00129.pdf)
+2. [Kazuki Shimada, Yuichiro Koyama, Shusuke Takahashi, Naoya Takahashi, Emiru Tsunoo, and Yuki Mitsufuji, " Multi-ACCDOA: localizing and detecting overlapping sounds from the same class with auxiliary duplicating permutation invariant training" in The International Conference on Acoustics, Speech, & Signal Processing (ICASSP 2022)](https://arxiv.org/pdf/2110.07124.pdf)
+3. [Davide Berghi, Peipei Wu, Jinzheng Zhao, Wenwu Wang, Philip J. B. Jackson, "Fusion of audio and audiovisual embeddings for sound event localization and detection" in the International Conference on Acoustics, Speech, & Signal Processing (ICASSP 2024)](https://arxiv.org/pdf/2312.09034.pdf)
+4. [Parthasaarathy Sudarsanam, Archontis Politis, Konstantinos Drossos, "Assessment of Self-Attention on Learned Features For Sound Event Localization and Detection" in Proceedings of the 6th Detection and Classification of Acoustic Scenes and Events 2021 Workshop (DCASE2021)](https://dcase.community/documents/workshop2021/proceedings/DCASE2021Workshop_Sudarsanam_38.pdf)
+5. [Daniel Aleksander Krause, Archontis Politis, Annamaria Mesaros, "Sound Event Detection and Localization with Distance Estimation" in arXiv: 2403.11827](https://arxiv.org/abs/2403.11827)
+6. [Annamaria Mesaros, Sharath Adavanne, Archontis Politis, Toni Heittola, and Tuomas Virtanen, "Joint Measurement of Localization and Detection of Sound Events", IEEE Workshop on Applications of Signal Processing to Audio and Acoustics (WASPAA 2019)](https://ieeexplore.ieee.org/document/8937220)
 
 ## License
 
