@@ -23,13 +23,15 @@ The input is the stereo audio and their corresponding video frames from which lo
 
 ## Dataset
 
-The stereoSELD dataset, derived from STARSS23, comprises 30,000 real recordings, each 5 seconds long. Each recording includes stereo audio, standard video, and the corresponding detection and localization labels. For further details, please refer to the task description webpage.
+The Stereo SELD dataset, derived from STARSS23, comprises 30,000 real recordings, each 5 seconds long. Each recording includes stereo audio, standard video, and the corresponding detection and localization labels. For further details, please refer to the task description webpage.
 
 Additional audio-visual synthetic data can be generated using Spatial scaper library and 
 
  **NOTE : Participants must use the fixed development test split provided in the baseline method for reporting development scores. The evaluation set will be released at a later stage.**
 
-The development dataset can be downloaded from the link - [**Sony-TAu Realistic Spatial Soundscapes 2023 (STARSS23)**](https://doi.org/10.5281/zenodo.7709052) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.7709052.svg)](https://doi.org/10.5281/zenodo.7709052)
+The development dataset can be downloaded from the link - [**DCASE2025 Task3 Stereo SELD Dataset**](https://doi.org/10.5281/zenodo.15087603)
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15087603.svg)](https://doi.org/10.5281/zenodo.15087603)
 
 ## Project Structure
 
