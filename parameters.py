@@ -11,7 +11,7 @@ Date: January 2025
 params = {
 
     # choose task
-    'modality': 'audio',  # 'audio' or 'audio_visual'
+    'modality': 'audio_visual',  # 'audio' or 'audio_visual'
     'net_type': 'SELDnet',
 
     # data params
@@ -55,19 +55,17 @@ params = {
     'label_sequence_length': 50,  # 5 seconds with 100ms frames
 
     # loss params
-    'multiACCDOA': False,
+    'multiACCDOA': True,
     'thresh_unify': 15,
 
     # training params
     'nb_epochs': 200,
-    'batch_size': 64,
+    'batch_size': 256,
     'nb_workers': 0,
     'shuffle': True,
 
-
     # optimizer params
-    'learning_rate': 1e-4,
-    #'weight_decay': 1e-2,
+    'learning_rate': 1e-3,
     'weight_decay': 0,
 
     # folds for training, testing
@@ -75,11 +73,14 @@ params = {
     'dev_test_folds': ['fold4'],
 
     # metric params
-    'average': 'macro',                  # Supports 'micro': sample-wise average and 'macro': class-wise average,
-    'segment_based_metrics': False,      # If True, uses segment-based metrics, else uses event-based metrics
-    'lad_doa_thresh': 20,                # DOA error threshold for computing the detection metrics
-    'lad_dist_thresh': float('inf'),     # Absolute distance error threshold for computing the detection metrics
-    'lad_reldist_thresh': float('0.5'),  # Relative distance error threshold for computing the detection metrics
-    'lad_req_onscreen': False,            # Require correct on-screen estimation when computing the detection metrics
+    'average': 'macro',                  # Supports 'micro': sample-wise average and 'macro': class-wise average.
+    'segment_based_metrics': False,      # If True, uses segment-based metrics, else uses event-based metrics.
+    'lad_doa_thresh': 20,                # DOA error threshold for computing the detection metrics.
+    'lad_dist_thresh': float('inf'),     # Absolute distance error threshold for computing the detection metrics.
+    'lad_reldist_thresh': float('1.0'),  # Relative distance error threshold for computing the detection metrics.
+    'lad_req_onscreen': False,           # Require correct on-screen estimation when computing the detection metrics.
+
+    'use_jackknife': False,               # If True, uses jackknife to calc results of the best model on test/eval set.
+                                          # CAUTION: Too slow to use jackknife
 
 }

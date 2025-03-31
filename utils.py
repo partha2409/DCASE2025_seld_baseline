@@ -698,3 +698,78 @@ def least_distance_between_gt_pred(gt_list, pred_list):
     row_ind, col_ind = linear_sum_assignment(cost_mat)
     cost = cost_mat[row_ind, col_ind]
     return cost, row_ind, col_ind
+
+
+def print_results(f, ang_error, dist_error, rel_dist_error, onscreen_acc, class_wise_scr, params):
+    use_jackknife = params['use_jackknife']
+    print('\n\n')
+    print('F-score: {:0.1f}% {}'.format(
+        100 * f[0] if use_jackknife else 100 * f,
+        '[{:0.2f}, {:0.2f}]'.format(100 * f[1][0], 100 * f[1][1]) if use_jackknife else ''
+    ))
+
+    print('DOA error: {:0.1f} {}'.format(
+        ang_error[0] if use_jackknife else ang_error,
+        '[{:0.2f}, {:0.2f}]'.format(ang_error[1][0], ang_error[1][1]) if use_jackknife else ''
+    ))
+
+    print('Distance error: {:0.2f} {}'.format(
+        dist_error[0] if use_jackknife else dist_error,
+        '[{:0.2f}, {:0.2f}]'.format(dist_error[1][0], dist_error[1][1]) if use_jackknife else ''
+    ))
+    print('Relative distance error: {:0.2f} {}'.format(
+        rel_dist_error[0] if use_jackknife else rel_dist_error,
+        '[{:0.2f}, {:0.2f}]'.format(rel_dist_error[1][0], rel_dist_error[1][1]) if use_jackknife else ''
+    ))
+
+    if params['modality'] == 'audio_visual':
+        print('Onscreen accuracy: {:0.1f}% {}'.format(
+            100 * onscreen_acc[0] if use_jackknife else 100 * onscreen_acc,
+            '[{:0.2f}, {:0.2f}]'.format(100 * onscreen_acc[1][0],
+                                        100 * onscreen_acc[1][1]) if use_jackknife else ''
+        ))
+
+    if params['average'] == 'macro':
+        print('Class-wise results on unseen data:')
+
+        if params['modality'] == 'audio_visual':
+            print('Class\tF-score\tDOA-Error\tDist-Error\tRelDist-Error\tOnscreenAcc.')
+        else:
+            print('Class\tF-score\tDOA-Error\tDist-Error\tRelDist-Error')
+
+        for cls_cnt in range(params['nb_classes']):
+            if params['modality'] == 'audio_visual':
+                print('{}\t{:0.2f} {}\t{:0.2f} {}\t{:0.2f} {}\t{:0.2f} {}\t{:0.2f} {}'.format(
+                    cls_cnt,
+                    class_wise_scr[0][0][cls_cnt] if use_jackknife else class_wise_scr[0][cls_cnt],
+                    '[{:0.2f}, {:0.2f}]'.format(class_wise_scr[1][0][cls_cnt][0],
+                                                class_wise_scr[1][0][cls_cnt][1]) if use_jackknife else '',
+                    class_wise_scr[0][1][cls_cnt] if use_jackknife else class_wise_scr[1][cls_cnt],
+                    '[{:0.2f}, {:0.2f}]'.format(class_wise_scr[1][1][cls_cnt][0],
+                                                class_wise_scr[1][1][cls_cnt][1]) if use_jackknife else '',
+                    class_wise_scr[0][2][cls_cnt] if use_jackknife else class_wise_scr[2][cls_cnt],
+                    '[{:0.2f}, {:0.2f}]'.format(class_wise_scr[1][2][cls_cnt][0],
+                                                class_wise_scr[1][2][cls_cnt][1]) if use_jackknife else '',
+                    class_wise_scr[0][3][cls_cnt] if use_jackknife else class_wise_scr[3][cls_cnt],
+                    '[{:0.2f}, {:0.2f}]'.format(class_wise_scr[1][3][cls_cnt][0],
+                                                class_wise_scr[1][3][cls_cnt][1]) if use_jackknife else '',
+                    class_wise_scr[0][4][cls_cnt] if use_jackknife else class_wise_scr[4][cls_cnt],
+                    '[{:0.2f}, {:0.2f}]'.format(class_wise_scr[1][4][cls_cnt][0],
+                                                class_wise_scr[1][4][cls_cnt][1]) if use_jackknife else ''
+                ))
+            else:
+                print('{}\t{:0.2f} {}\t{:0.2f} {}\t{:0.2f} {}\t{:0.2f} {}'.format(
+                    cls_cnt,
+                    class_wise_scr[0][0][cls_cnt] if use_jackknife else class_wise_scr[0][cls_cnt],
+                    '[{:0.2f}, {:0.2f}]'.format(class_wise_scr[1][0][cls_cnt][0],
+                                                class_wise_scr[1][0][cls_cnt][1]) if use_jackknife else '',
+                    class_wise_scr[0][1][cls_cnt] if use_jackknife else class_wise_scr[1][cls_cnt],
+                    '[{:0.2f}, {:0.2f}]'.format(class_wise_scr[1][1][cls_cnt][0],
+                                                class_wise_scr[1][1][cls_cnt][1]) if use_jackknife else '',
+                    class_wise_scr[0][2][cls_cnt] if use_jackknife else class_wise_scr[2][cls_cnt],
+                    '[{:0.2f}, {:0.2f}]'.format(class_wise_scr[1][2][cls_cnt][0],
+                                                class_wise_scr[1][2][cls_cnt][1]) if use_jackknife else '',
+                    class_wise_scr[0][3][cls_cnt] if use_jackknife else class_wise_scr[3][cls_cnt],
+                    '[{:0.2f}, {:0.2f}]'.format(class_wise_scr[1][3][cls_cnt][0],
+                                                class_wise_scr[1][3][cls_cnt][1]) if use_jackknife else ''
+                ))
