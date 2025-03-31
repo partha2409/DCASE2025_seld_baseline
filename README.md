@@ -2,7 +2,7 @@
 
 [Please visit the official webpage of the DCASE 2025 Challenge for the task details](https://dcase.community/challenge2025/task-stereo-sound-event-localization-and-detection-in-regular-video-content).
 
-This year's challenge features both an **audio-only** and an **audio-visual** track. Unlike previous editions, which utilized four-channel FOA/MIC format audio and 360-degree video, this year's challenge employs **stereo audio** and **standard video**. The dataset used for this challenge, Stereo SELD, is derived from the STARSS23 dataset, with each sample having a duration of 5 seconds. Details on the StereoSELD dataset creation process can be found in [text][link].
+This year's challenge features both an **audio-only** and an **audio-visual** track. Unlike previous editions, which utilized four-channel FOA/MIC format audio and 360-degree video, this year's challenge employs **stereo audio** and **standard video**. The dataset used for this challenge, Stereo SELD, is derived from the STARSS23 dataset, with each sample having a duration of 5 seconds. Details on the StereoSELD dataset creation process can be found in the task description page.
 
 ## Task Overview
 
@@ -24,14 +24,14 @@ The input is the stereo audio and their corresponding video frames from which lo
 ## Dataset
 
 The Stereo SELD dataset, derived from STARSS23, comprises 30,000 real recordings, each 5 seconds long. Each recording includes stereo audio, standard video, and the corresponding detection and localization labels. For further details, please refer to the task description webpage.
-
-Additional audio-visual synthetic data can be generated using Spatial scaper library and 
-
  **NOTE : Participants must use the fixed development test split provided in the baseline method for reporting development scores. The evaluation set will be released at a later stage.**
-
+ 
 The development dataset can be downloaded from the link - [**DCASE2025 Task3 Stereo SELD Dataset**](https://doi.org/10.5281/zenodo.15087603)
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15087603.svg)](https://doi.org/10.5281/zenodo.15087603)
+
+
+**NOTE: Additional audio-visual synthetic data can be generated using the Spatial Scaper library, and the process for creating stereo versions of the synthetic data is detailed on the task description page.** 
 
 ## Project Structure
 
@@ -52,7 +52,7 @@ The provided codebase has been tested on python 3.9 and torch 2.6
 
 ### Download and organize the dataset
 
-1. **Download** the dataset from [this link](text).
+1. **Download** the dataset from [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15087603.svg)](https://doi.org/10.5281/zenodo.15087603).
 2. **Extract** the dataset into a root directory named `DCASE2025_SELD_dataset/`.
 3. After unzipping, the directory structure should be:
 
@@ -76,8 +76,8 @@ DCASE2025_SELD_dataset/
 
 ```
 
-4. If you generate synthetic data, place it into the respective folders under the name `dev-train-synth`.
-
+4. If you generate synthetic data, place it into the respective folders under the name `dev-train-synth`. The baseline results reported here were trained using an additional synthetic dataset consisting of 15,000 5-second audio-visual samples.
+   
 ### Inference on the Trained Model
 
 To run inference using the provided baseline pre-trained models:
