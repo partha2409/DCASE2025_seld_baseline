@@ -15,6 +15,7 @@ import torch
 from metrics import ComputeSELDResults
 from data_generator import DataGenerator
 from torch.utils.data import DataLoader
+from extract_features import SELDFeatureExtractor
 
 
 def run_inference():
@@ -25,9 +26,14 @@ def run_inference():
 
     reference = model_dir.split('/')[-1]
     output_dir = os.path.join(params['output_dir'], reference)
-    os.makedirs(params['output_dir'], exists_ok = True)
-    os.makedirs(output_dir, exists_ok = True)
-    
+    os.makedirs(params['output_dir'], exist_ok=True)
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Feature extraction code.
+    feature_extractor = SELDFeatureExtractor(params)
+    feature_extractor.extract_features(split='dev')
+    feature_extractor.extract_labels(split='dev')
+
     seld_model = SELDModel(params).to(device)
     model_ckpt = torch.load(os.path.join(model_dir, 'best_model.pth'), map_location=device, weights_only=False)
     seld_model.load_state_dict(model_ckpt['seld_model'])
@@ -61,7 +67,6 @@ def run_inference():
 
 
 if __name__ == '__main__':
-
     model_dir = "checkpoints/SELDnet_audio_multiACCDOA_20250330_170742"
     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
     run_inference()
