@@ -141,7 +141,7 @@ The evaluation metric scores for the test split of the development dataset is gi
 
 ## Submission
 
-* Make sure the file-wise output you are submitting is produced at 100 ms hop length. At this hop length a 60 s audio file has 600 frames.
+* Make sure the file-wise output you are submitting is produced at 100 ms hop length. At this hop length a 5s audio file has 50 frames.
 
 For more information on the submission file formats, [check the task webpage](https://dcase.community/challenge2025/task-stereo-sound-event-localization-and-detection-in-regular-video-content#submission)
 
