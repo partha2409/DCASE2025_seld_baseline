@@ -43,6 +43,53 @@ The development dataset can be downloaded from the link - [**Sony-TAu Realistic 
 * `parameters.py` script contains all hyperparameters and configurations. If a user needs to modify parameters, they should update them here.
 * `utils.py` script includes various utility functions used throughout the project.
 
+## How to use this repo?
+
+### Pre-requisites
+The provided codebase has been tested on python 3.9 and torch 2.6
+
+### Download and organize the dataset
+
+1. **Download** the dataset from [this link](text).
+2. **Extract** the dataset into a root directory named `DCASE2025_SELD_dataset/`.
+3. After unzipping, the directory structure should be:
+
+4. If you generate synthetic data, place it into the respective folders under the name `dev-train-synth`.
+
+### Inference on the Trained Model
+
+To run inference using the provided baseline pre-trained models:
+
+1. **Download** a pre-trained model.
+2. **Update** the `model_dir` in `inference.py` with the downloaded model path.
+3. **Run inference** using the following command:
+```bash
+python inference.py
+```
+
+### Training the Stereo SELDnet Model
+
+To train the model with default settings:
+
+- `modality = 'audio_visual'`
+- `multiaccdoa = True`
+
+Run the following command:
+```bash
+python main.py
+```
+
+### Custom Training Configuration
+
+To modify training settings:
+
+1. Edit the `parameters.py` file.
+2. Adjust the configurations according to your requirements.
+3. Run the following command to train with updated settings:
+   ```bash
+   python main.py
+   ```
+   
 ## Results on development dataset
 
 ### Metrics Overview
