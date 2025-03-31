@@ -25,7 +25,9 @@ def run_inference():
 
     reference = model_dir.split('/')[-1]
     output_dir = os.path.join(params['output_dir'], reference)
-
+    os.makedirs(params['output_dir'], exists_ok = True)
+    os.makedirs(output_dir, exists_ok = True)
+    
     seld_model = SELDModel(params).to(device)
     model_ckpt = torch.load(os.path.join(model_dir, 'best_model.pth'), map_location=device, weights_only=False)
     seld_model.load_state_dict(model_ckpt['seld_model'])
