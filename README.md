@@ -2,7 +2,7 @@
 
 [Please visit the official webpage of the DCASE 2025 Challenge for the task details](https://dcase.community/challenge2025/task-stereo-sound-event-localization-and-detection-in-regular-video-content).
 
-This year's challenge features both an **audio-only** and an **audio-visual** track. Unlike previous editions, which utilized four-channel FOA/MIC format audio and 360-degree video, this year's challenge employs **stereo audio** and **standard video**. The dataset used for this challenge, StereoSELD, is derived from the STARSS23 dataset, with each sample having a duration of 5 seconds. Details on the StereoSELD dataset creation process can be found in [text][link].
+This year's challenge features both an **audio-only** and an **audio-visual** track. Unlike previous editions, which utilized four-channel FOA/MIC format audio and 360-degree video, this year's challenge employs **stereo audio** and **standard video**. The dataset used for this challenge, Stereo SELD, is derived from the STARSS23 dataset, with each sample having a duration of 5 seconds. Details on the StereoSELD dataset creation process can be found in [text][link].
 
 ## Task Overview
 
@@ -55,6 +55,26 @@ The provided codebase has been tested on python 3.9 and torch 2.6
 1. **Download** the dataset from [this link](text).
 2. **Extract** the dataset into a root directory named `DCASE2025_SELD_dataset/`.
 3. After unzipping, the directory structure should be:
+
+```bash
+DCASE2025_SELD_dataset/
+├── stereo_dev/
+│   ├── dev-train-tau/*.wav
+│   ├── dev-train-sony/*.wav
+│   ├── dev-test-tau/*.wav
+│   ├── dev-test-sony/*.wav
+├── metadata_dev/
+│   ├── dev-train-tau/*.csv
+│   ├── dev-train-sony/*.csv
+│   ├── dev-test-tau/*.csv
+│   ├── dev-test-sony/*.csv
+├── video_dev/
+│   ├── dev-train-tau/*.mp4
+│   ├── dev-train-sony/*.mp4
+│   ├── dev-test-tau/*.mp4
+│   ├── dev-test-sony/*.mp4
+
+```
 
 4. If you generate synthetic data, place it into the respective folders under the name `dev-train-synth`.
 
