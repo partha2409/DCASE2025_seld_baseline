@@ -93,38 +93,21 @@ class SELDLossADPIT(nn.Module):
         num_permutation = 13
 
         # calculate ACCDOA loss for each target permutation and store them to list_loss_accdoa
-        output_accdoa = output.reshape(num_bs, num_frame, num_track, num_element, num_class)[:, :, :, 0:2, :]  # use accdoa elements
-        output_accdoa = output_accdoa.reshape(num_bs, num_frame, -1, num_class)  # the same shape of each target_accdoa permutation: (batch_size, frames, 3 (tracks) x 2 (act*x, act*y), classes)
+        output_accdoa = output.reshape(num_bs, num_frame, num_track, num_element, num_class)[:, :, :, 0:3, :]  # use accdoa + dist elements
+        output_accdoa = output_accdoa.reshape(num_bs, num_frame, -1, num_class)  # the same shape of each target_accdoa permutation: (batch_size, frames, 3 (tracks) x 3 (act*x, act*y, dist), classes)
         # NOTE: these reshapes are from my temporal assumption, we need to check how to reshape output
-        target_accdoa_A0 = target[:, :, 0, 0:1, :] * target[:, :, 0, 1:3, :]  # A0, no ov from the same class: (batch_size, frames, 1 (act), classes) * (batch_size, frames, 2 (x, y), classes)
-        target_accdoa_B0 = target[:, :, 1, 0:1, :] * target[:, :, 1, 1:3, :]  # B0, ov with 2 sources from the same class
-        target_accdoa_B1 = target[:, :, 2, 0:1, :] * target[:, :, 2, 1:3, :]  # B1
-        target_accdoa_C0 = target[:, :, 3, 0:1, :] * target[:, :, 3, 1:3, :]  # C0, ov with 3 sources from the same class
-        target_accdoa_C1 = target[:, :, 4, 0:1, :] * target[:, :, 4, 1:3, :]  # C1
-        target_accdoa_C2 = target[:, :, 5, 0:1, :] * target[:, :, 5, 1:3, :]  # C2
+        target_accdoa_A0 = target[:, :, 0, 0:1, :] * target[:, :, 0, 1:4, :]  # A0, no ov from the same class: (batch_size, frames, 1 (act), classes) * (batch_size, frames, 3 (x, y, dist), classes)
+        target_accdoa_B0 = target[:, :, 1, 0:1, :] * target[:, :, 1, 1:4, :]  # B0, ov with 2 sources from the same class
+        target_accdoa_B1 = target[:, :, 2, 0:1, :] * target[:, :, 2, 1:4, :]  # B1
+        target_accdoa_C0 = target[:, :, 3, 0:1, :] * target[:, :, 3, 1:4, :]  # C0, ov with 3 sources from the same class
+        target_accdoa_C1 = target[:, :, 4, 0:1, :] * target[:, :, 4, 1:4, :]  # C1
+        target_accdoa_C2 = target[:, :, 5, 0:1, :] * target[:, :, 5, 1:4, :]  # C2
         # NOTE: I assume target consists of A0, ..., C2, we need to check how to make target
         list_target_accdoa_perms = self._make_target_perms(target_accdoa_A0, target_accdoa_B0, target_accdoa_B1,
                                                            target_accdoa_C0, target_accdoa_C1, target_accdoa_C2)
         list_loss_accdoa = []
         for each_target_accdoa in list_target_accdoa_perms:
             list_loss_accdoa.append(self._mse(output_accdoa, each_target_accdoa))
-
-        # calculate dist loss for each target permutation and store them to list_loss_dist
-        output_dist = output.reshape(num_bs, num_frame, num_track, num_element, num_class)[:, :, :, 2:3, :]  # use dist element
-        output_dist = output_dist.reshape(num_bs, num_frame, -1, num_class)  # the same shape of each target_dist permutation: (batch_size, frames, 3 (tracks) x 1 (dist), classes)
-        target_dist_A0 = target[:, :, 0, 3:4, :]  # (batch_size, frames, 1 (dist), classes)
-        target_dist_B0 = target[:, :, 1, 3:4, :]
-        target_dist_B1 = target[:, :, 2, 3:4, :]
-        target_dist_C0 = target[:, :, 3, 3:4, :]
-        target_dist_C1 = target[:, :, 4, 3:4, :]
-        target_dist_C2 = target[:, :, 5, 3:4, :]
-        list_target_dist_perms = self._make_target_perms(target_dist_A0, target_dist_B0, target_dist_B1,
-                                                         target_dist_C0, target_dist_C1, target_dist_C2)
-        list_loss_dist = []
-        for each_target_dist in list_target_dist_perms:
-            list_loss_dist.append(self._mse(output_dist, each_target_dist))
-
-            # NOTE: how do we set gt dist when no source?, we may use masked mse for dist loss
 
         # if audiovisual, calculate on/off loss for each target permutation and store them to list_loss_screen
         if self.modality == 'audio':
@@ -151,7 +134,7 @@ class SELDLossADPIT(nn.Module):
         # use the corresponding dist and on/off losses in addition to the ACCDOA loss
         loss_sum = 0
         for i in range(num_permutation):
-            loss_sum += (list_loss_accdoa[i] + list_loss_dist[i] + list_loss_screen[i]) * (loss_accdoa_min == i)
+            loss_sum += (list_loss_accdoa[i] + list_loss_screen[i]) * (loss_accdoa_min == i)
         loss = loss_sum.mean()
         return loss
 
