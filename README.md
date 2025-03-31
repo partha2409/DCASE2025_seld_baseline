@@ -81,11 +81,10 @@ DCASE2025_SELD_dataset/
    
 ### Inference on the Trained Model
 
-To run inference using the provided baseline pre-trained models:
+To run inference using the provided baseline pre-trained models present in the `checkpoints` directory:
 
-1. **Download** a pre-trained model.
-2. **Update** the `model_dir` in `inference.py` with the downloaded model path.
-3. **Run inference** using the following command:
+1. **Update** the `model_dir` in `inference.py` with the path to the pretrained model directory.
+2. **Run inference** using the following command:
 ```bash
 python inference.py
 ```
@@ -106,9 +105,8 @@ python main.py
 
 To modify training settings:
 
-1. Edit the `parameters.py` file.
-2. Adjust the configurations according to your requirements.
-3. Run the following command to train with updated settings:
+1. Edit the `parameters.py` file to adjust the configurations according to your requirements.
+2.  Run the following command to train with updated settings:
    ```bash
    python main.py
    ```
@@ -134,8 +132,8 @@ The evaluation metric scores for the test split of the development dataset is gi
 
 | Dataset | F<sub>20°</sub> | DOAE<sub>CD</sub> | RDE<sub>CD</sub> | on/off screen accuracy |
 | ----| --- | --- | --- | --- |
-| Audio only | % | &deg; | 0. | N/A |
-| Audio-visual| % | &deg; | 0. | 0. |
+| Audio only | 22.78% | 24.5&deg; | 0.41 | N/A |
+| Audio-visual| 26.25% | 23.9&deg; | 0.36 | 0.80 |
 
 **Note:** The reported baseline system performance is not exactly reproducible due to varying setups. However, you should be able to obtain very similar results.
 
