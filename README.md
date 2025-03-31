@@ -134,7 +134,7 @@ The evaluation metric scores for the test split of the development dataset is gi
 
 | Dataset | F<sub>20°</sub> | DOAE<sub>CD</sub> | RDE<sub>CD</sub> | on/off screen accuracy |
 | ----| --- | --- | --- | --- |
-| Audio only | % | &deg; | 0. | NA |
+| Audio only | % | &deg; | 0. | N/A |
 | Audio-visual| % | &deg; | 0. | 0. |
 
 **Note:** The reported baseline system performance is not exactly reproducible due to varying setups. However, you should be able to obtain very similar results.
