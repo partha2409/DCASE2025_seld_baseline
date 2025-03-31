@@ -69,7 +69,7 @@ params = {
     'weight_decay': 0,
 
     # folds for training, testing
-    'dev_train_folds': ['fold2', 'fold3'],
+    'dev_train_folds': ['fold1', 'fold3'],  # 'fold1' is the synthetic training data. You can skip that if you do not use the synthetic data to train.
     'dev_test_folds': ['fold4'],
 
     # metric params
