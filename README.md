@@ -120,6 +120,12 @@ As the [SELD evaluation metric](https://www.aane.in/research/computational-audio
   - The predicted and reference class match.
   - The DOA angular error is within **20°**.
   - The relative distance error is below **1.0**.
+    
+- **F-score (F<sub>20°/on-off</sub>)** – Additional F-score for the audio-visual task, considering a prediction correct only if:
+  - The predicted and reference class match.
+  - The DOA angular error is within **20°**.
+  - The relative distance error is below **1.0**.
+  - The event is correctly identified as being On-screen or Off-screen.
 
 - **DOA Angular Error (DOAE<sub>CD</sub>)** – Measures the class-dependent doa error in degrees.
 
@@ -130,10 +136,10 @@ Unlike location-aware detection, no angular or distance thresholds are applied f
 
 The evaluation metric scores for the test split of the development dataset is given below. 
 
-| Dataset | F<sub>20°</sub> | DOAE<sub>CD</sub> | RDE<sub>CD</sub> | on/off screen accuracy |
-| ----| --- | --- | --- | --- |
-| Audio only | 22.78% | 24.5&deg; | 0.41 | N/A |
-| Audio-visual| 26.77% | 23.8&deg; | 0.40 | 0.80 |
+| Dataset | F<sub>20°</sub> | F<sub>20°/on-off</sub> | DOAE<sub>CD</sub> | RDE<sub>CD</sub> | on/off screen accuracy |
+| ----| --- | --- | --- | --- | --- |
+| Audio only | 22.78% | N/A | 24.5&deg; | 0.41 | N/A |
+| Audio-visual| 26.77% | 20.0% | 23.8&deg; | 0.40 | 0.80 |
 
 **Note:** The reported baseline system performance is not exactly reproducible due to varying setups. However, you should be able to obtain very similar results.
 
