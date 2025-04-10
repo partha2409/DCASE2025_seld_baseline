@@ -32,6 +32,11 @@ def setup(params):
     Returns:
         tuple: A tuple containing the path to the checkpoints folder, output folder and the tensorboard summary writer instance.
     """
+
+    print('You are using the following configuration: \n\n')
+    for key, value in params.items():
+        print(key, ': ', value)
+
     # create dir to save model checkpoints
     reference = f"{params['net_type']}_{params['modality']}_{'multiACCDOA' if params['multiACCDOA'] else 'singleACCDOA'}{time.strftime('_%Y%m%d_%H%M%S')}"
     checkpoints_dir = os.path.join(params['checkpoints_dir'], reference)

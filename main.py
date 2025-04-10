@@ -18,6 +18,7 @@ from data_generator import DataGenerator
 from torch.utils.data import DataLoader
 from extract_features import SELDFeatureExtractor
 import utils
+import pickle
 
 
 def train_epoch(seld_model, dev_train_iterator, optimizer, seld_loss):
@@ -85,6 +86,14 @@ def val_epoch(seld_model, dev_test_iterator, seld_loss, seld_metrics, output_dir
 
 def main():
 
+    if restore_from_checkpoint:
+        print('Loading params from the initial checkpoint')
+        params_file = os.path.join(initial_checkpoint_path, 'config.pkl')
+        f = open(params_file, "rb")
+        loaded_params = pickle.load(f)
+        params.clear()  # Clear the original params
+        params.update(loaded_params)
+
     # Set up directories for storing model checkpoints, predictions(output_dir), and create a summary writer
     checkpoints_folder, output_dir, summary_writer = utils.setup(params)
 
@@ -113,6 +122,14 @@ def main():
 
     start_epoch = 0
     best_f_score = float('-inf')
+
+    if restore_from_checkpoint:
+        print('Loading model weights and optimizer state dict from initial checkpoint...')
+        model_ckpt = torch.load(os.path.join(initial_checkpoint_path, 'best_model.pth'), map_location=device, weights_only=False)
+        seld_model.load_state_dict(model_ckpt['seld_model'])
+        optimizer.load_state_dict(model_ckpt['opt'])
+        start_epoch = model_ckpt['epoch'] + 1
+        best_f_score = model_ckpt['best_f_score']
 
     for epoch in range(start_epoch, params['nb_epochs']):
         # ------------- Training -------------- #
@@ -152,5 +169,8 @@ def main():
 
 if __name__ == '__main__':
     device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
+    restore_from_checkpoint = True
+    initial_checkpoint_path = 'checkpoints/SELDnet_audio_visual_multiACCDOA_20250331_173131'
+
     main()
 
