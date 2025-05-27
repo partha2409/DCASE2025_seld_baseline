@@ -149,6 +149,17 @@ The evaluation metric scores for the test split of the development dataset is gi
 
 For more information on the submission file formats, [check the task webpage](https://dcase.community/challenge2025/task-stereo-sound-event-localization-and-detection-in-regular-video-content#submission)
 
+#### Inference on the Evaluation dataset
+
+To get the predictions of the trained mode on the evaluation dataset using the provided baseline pre-trained models present in the `checkpoints` directory:
+
+1. **Update** the `model_dir` in `evaluate.py` with the path to the pretrained model directory.
+2. **Run inference on the eval data** using the following command:
+```bash
+python evaluate.py
+```
+This will store the predictions on the eval dataset in the output folder in the expected submission file format.
+
 ## References
 
 1. [Sharath Adavanne, Archontis Politis, Joonas Nikunen and Tuomas Virtanen, "Sound event localization and detection of overlapping sources using convolutional recurrent neural network" in IEEE Journal of Selected Topics in Signal Processing (JSTSP 2018)](https://arxiv.org/pdf/1807.00129.pdf)
