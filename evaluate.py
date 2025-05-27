@@ -12,8 +12,6 @@ from model import SELDModel
 import pickle
 import os
 import torch
-from metrics import ComputeSELDResults
-
 from torch.utils.data import DataLoader
 from extract_features import SELDFeatureExtractor
 from torch.utils.data import Dataset
@@ -68,7 +66,7 @@ class EvalDataGenerator(Dataset):
         Returns:
             tuple: A tuple containing lists of paths to audio feature files, video feature files.
         """
-        audio_files, video_files, label_files = [], [], []
+        audio_files, video_files = [], []
 
         # Loop through each fold and collect files
 
